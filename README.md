@@ -11,6 +11,16 @@ package. This package is intended to be used as a benchmark (in both
 performance and accuracy), and to complement Grid.jl where Dierckx has
 some unique functionality.
 
+Note: `scipy.interpolate` is also a thin wrapper for the same Fortran
+Dierckx library. The functionality and performance here should be
+similar. Equivalent classes/types:
+
+| scipy.interpolate   | Dierckx.jl |
+| ------------------- | ---------- |
+| RectBivariateSpline | GridSpline |
+
+_Note that Dierckx.jl is in development and type names may change._
+
 Usage
 -----
 
@@ -41,3 +51,4 @@ License
 
 Dierckx.jl is distributed under a 3-clause BSD license. See LICENSE.md
 for details.
+
