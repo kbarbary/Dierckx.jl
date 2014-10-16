@@ -1,2 +1,6 @@
+# compiled files
+*.o
+*.so
+
 # emacs
 *~
