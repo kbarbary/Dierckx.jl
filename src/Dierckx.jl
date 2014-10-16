@@ -7,9 +7,8 @@ const ddierckx = joinpath(dirname(@__FILE__),
                           "../deps/src/ddierckx/libddierckx")
 
 # Ensure library is available.
-if (dlopen(ddierckx) == C_NULL)
-    error("Dierckx not properly installed. "\
-          "Please run Pkg.build(\"Dierckx\")")
+if (dlopen_e(ddierckx) == C_NULL)
+    error("Dierckx not properly installed. Please run Pkg.build(\"Dierckx\")")
 end
 
 const _surfit_messages = [1=>"""
