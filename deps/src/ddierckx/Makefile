@@ -4,7 +4,7 @@
 
 LIB=ddierckx
 FC=gcc
-FFLAGS=-fPIC
+FFLAGS=-fPIC -O3
 
 OBJ=$(patsubst %.f,%.o,$(shell ls *.f))
 all: lib$(LIB).so
