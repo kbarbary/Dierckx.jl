@@ -21,6 +21,13 @@ similar. Equivalent classes/types:
 
 _Note that Dierckx.jl is in development and type names may change._
 
+Install
+-------
+
+```julia
+julia> Pkg.add("git://github.com/kbarbary/Dierckx.jl.git")
+```
+
 Usage
 -----
 
