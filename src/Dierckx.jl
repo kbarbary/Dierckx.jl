@@ -1,22 +1,23 @@
 module Dierckx
 
 export GridSpline,
-       evaluate
+       evaluate,
+       evalgrid
 
 const ddierckx = joinpath(dirname(@__FILE__),
                           "../deps/src/ddierckx/libddierckx")
 
 # Ensure library is available.
 if (dlopen_e(ddierckx) == C_NULL)
-    error("Dierckx not properly installed. Please run Pkg.build(\"Dierckx\")")
+    error("Dierckx not properly installed. Run Pkg.build(\"Dierckx\")")
 end
 
-const _surfit_messages = [1=>"""
+const _fit_messages = [1=>"""
 The required storage space exceeds the available storage space: nxest
 or nyest too small, or s too small.
 The weighted least-squares spline corresponds to the current set of
 knots.""",
-                          2=>"""
+                       2=>"""
 A theoretically impossible result was found during the iteration
 process for finding a smoothing spline with fp = s: s too small or
 badly chosen eps.
@@ -51,6 +52,12 @@ minimal norm least-squares solution of a (numerically) rank deficient
 system (deficiency=%i). If deficiency is large, the results may be
 inaccurate. Deficiency may strongly depend on the value of eps."""
 ]
+
+const _evaluate_message = """Invalid input data. Restrictions:
+length(x) >= 1, length(y) >= 1
+x(i-1) <= x(i), i=2,...,length(x)
+y(j-1) <= y(j), j=2,...,length(y)
+"""
 
 # Currently only Float64, will add Float32 when we add
 # single-precision dierckx library.
@@ -131,7 +138,7 @@ function GridSpline(x::Vector{Float64}, y::Vector{Float64},
     resize!(c, (nx[1] - kx - 1) * (ny[1] - ky - 1))
 
     if !(ier[1] == 0 || ier[1] == -1 || ier[1] == -2)
-        msg = _surfit_messages[ier[1]]
+        msg = _fit_messages[ier[1]]
         error(msg)
     end
 
@@ -150,21 +157,57 @@ function evaluate(spline::GridSpline, x::Vector{Float64},
     z = Array(Float64, m)  # Return values
 
     ccall((:bispeu_, ddierckx), Void,
-          (Ptr{Float64}, Ptr{Int32},  # tx, nx
-           Ptr{Float64}, Ptr{Int32},  # ty, ny
+          (Ptr{Float64}, Ptr{Int32},  # ty, ny
+           Ptr{Float64}, Ptr{Int32},  # tx, nx
            Ptr{Float64},  # c
-           Ptr{Int32}, Ptr{Int32},  # kx, ky
-           Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # x, y, z
+           Ptr{Int32}, Ptr{Int32},  # ky, kx
+           Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # y, x, z
            Ptr{Int32},  # m
            Ptr{Float64}, Ptr{Int32}, Ptr{Int32}),  # wrk, lwrk, ier
           spline.ty, &length(spline.ty), spline.tx, &length(spline.tx),
           spline.c, &spline.ky, &spline.kx, y, x, z, &m, wrk, &lwrk, ier)
 
-    if ier[1] >= 1
-        error("spline fitting error $(ier[1])")
+    if ier[1] != 0
+        error(_evaluate_message)
     end
 
     return z
 end
+
+# Evaluate spline on the grid spanned by the input arrays.
+function evalgrid(spline::GridSpline, x::Vector{Float64}, y::Vector{Float64})
+
+    mx = length(x)
+    my = length(y)
+    ier = Array(Int32, 1)
+    lwrk = mx*(spline.kx + 1) + my*(spline.ky + 1)
+    wrk = Array(Float64, lwrk)
+    kwrk = mx * my
+    iwrk = Array(Int32, kwrk)
+
+    z = Array(Float64, mx, my)  # Return values
+
+    ccall((:bispev_, ddierckx), Void,
+          (Ptr{Float64}, Ptr{Int32},  # ty, ny
+           Ptr{Float64}, Ptr{Int32},  # tx, nx
+           Ptr{Float64},  # c
+           Ptr{Int32}, Ptr{Int32},  # ky, kx
+           Ptr{Float64}, Ptr{Int32},  # y, my
+           Ptr{Float64}, Ptr{Int32},  # x, mx
+           Ptr{Float64},  # z
+           Ptr{Float64}, Ptr{Int32},  # wrk, lwrk
+           Ptr{Int32}, Ptr{Int32},  # iwrk, kwrk
+           Ptr{Int32}),  # ier
+          spline.ty, &length(spline.ty), spline.tx, &length(spline.tx),
+          spline.c, &spline.ky, &spline.kx, y, &my, x, &mx, z,
+          wrk, &lwrk, iwrk, &kwrk, ier)
+
+    if ier[1] != 0
+        error(_evalute_message)
+    end
+
+    return z
+end
+
 
 end # module

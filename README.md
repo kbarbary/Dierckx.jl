@@ -40,10 +40,15 @@ z = [1. 2. 1. 2.;
 
 spline = GridSpline(x, y, z)
 
+# evaluate at element-wise points
 xi = [1., 1.5, 2.3, 4.5, 3.3, 3.2, 3.]
 yi = [1., 2.3, 5.3, 0.5, 3.3, 1.2, 3.]
-
 zi = evaluate(spline, xi, yi)  # 1-d array of length 7
+
+# evaluate at grid spanned by input arrays
+xi = [1., 1.5, 2.3, 4.5]
+yi = [1., 2.3, 5.3]
+zi = evalgrid(spline, xi, yi)  # 2-d array of size (4, 3)
 ```
 
 License
