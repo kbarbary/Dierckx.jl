@@ -1,2 +1,4 @@
+const msg = "No OSX or Windows Makefiles!"
+
 cd(joinpath(dirname(@__FILE__), "src", "ddierckx"))
-run(`make`)
+@linux? run(`make`): error(msg)
