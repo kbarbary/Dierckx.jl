@@ -5,6 +5,19 @@ using Base.Test
 # Answers 'ans' are from scipy.interpolate,
 # generated with genanswers.py script.
 
+# -----------------------------------------------------------------------------
+# Spline1D
+
+x = [1., 2., 3.]
+y = [0., 2., 4.]
+spl = Spline1D(x, y; k=1)
+#assert_array_almost_equal(lut.get_knots(),[1,3])
+#assert_array_almost_equal(lut.get_coeffs(),[0,4])
+#assert_almost_equal(lut.get_residual(),0.0)
+yi = evaluate(spl, [1.0, 1.5, 2.0])
+@test_approx_eq(yi, [0.0, 1.0, 2.0])
+
+
 x = [0.5, 2., 3., 4., 5.5, 8.]
 y = [0.5, 2., 3., 4.]
 
