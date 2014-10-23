@@ -360,7 +360,7 @@ function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Vector{Float64};
 
     if (ier[1] == 0 || ier[1] == -1 || ier[1] == -2)
         # good values, pass.
-    else if ier[1] < -2
+    elseif ier[1] < -2
         warn("""
         The coefficients of the spline returned have been
         computed as the minimal norm least-squares solution of a
