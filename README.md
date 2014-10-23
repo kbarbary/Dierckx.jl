@@ -74,13 +74,15 @@ the extreme cases the program will return an interpolating spline if
 `s=0.0` and the weighted least-squares polynomial of degree `k` if `s`
 is very large.
 
-In the second form, the knots are supplied by the user.
+In the second form, the knots are supplied by the user. There is
+no smoothing parameter in this form.
 
 ```julia
 evaluate(spl, x)
 ```
 Evalute the 1-d spline `spl` at points given in `x`, which can be a
-vector or scalar.
+Vector or scalar. If a Vector, the input arrays must be monotonically
+increasing.
 
 ### 2-d Splines
 
@@ -95,43 +97,45 @@ If `z` is also a vector, the inputs are assumed to represent
 unstructured data, with `z[i]` being the function value at point
 `(x[i], y[i])`. In this case, the lengths of all inputs must match.
 
-If `z` is a 2-d array, the data are assumed to be gridded: `z[i, j]` is
-the function value at `(x[i], y[j])`. In this case, it is required that
-`size(z) == (length(x), length(y))`.
+If `z` is a 2-d array, the data are assumed to be gridded: `z[i, j]`
+is the function value at `(x[i], y[j])`. In this case, it is required
+that `size(z) == (length(x), length(y))`.
 
 ```julia
 evaluate(spl, x, y)
 ```
 
-Evalute the 2-d spline `spl` at points `(x[i], y[i])`.
+Evalute the 2-d spline `spl` at points `(x[i], y[i])`. Points outside
+the domain of the spline are set to the values at the boundary.
 
 ```julia
 evalgrid(spl, x, y)
 ```
 
-Evaluate the 2-d spline `spl` at the grid points spanned by the coordinate
-arrays `x` and `y`.
+Evaluate the 2-d spline `spl` at the grid points spanned by the
+coordinate arrays `x` and `y`. The input arrays must be monotonically
+increasing.
 
-Relation to `scipy.interpolate`
--------------------------------
+Translation from scipy.interpolate
+----------------------------------
 
-The `*Spline` classes in `scipy.interpolate` are also thin wrappers
+The `*Spline` classes in scipy.interpolate are also thin wrappers
 for the Dierckx Fortran library. The performance of Dierckx.jl should
 be similar or better than the `scipy.interpolate` classes. (Better for
 small arrays where Python overhead is more significant.) The
 equivalent of a specific classes in `scipy.interpolate`:
 
-| scipy.interpolate class      | Dierckx.jl function                 |
-| ---------------------------- | ----------------------------------- |
-| UnivariateSpline             | Spline1D(x, y)                      |
-| InterpolatedUnivariateSpline | Spline1D(x, y; s=0.0) [default s]   |
-| LSQUnivariateSpline          | Spline1D(x, y, xknots)              |
-| SmoothBivariateSpline        | Spline2D()                          |
-| LSQBivariateSpline           |                                     |
-| RectBivariateSpline          | Spline2D() with 2-d z array         |
-| SmoothSphereBivariateSpline  |                                     |
-| LSQSphereBivariateSpline     |                                     |
-| RectSphereBivariateSpline    |                                     |
+| scipy.interpolate class      | Dierckx.jl constructor method            |
+| ---------------------------- | ---------------------------------------- |
+| UnivariateSpline             | Spline1D(x, y)                           |
+| InterpolatedUnivariateSpline | Spline1D(x, y; s=0.0) [s=0.0 is default] |
+| LSQUnivariateSpline          | Spline1D(x, y, xknots)                   |
+| SmoothBivariateSpline        | Spline2D()                               |
+| LSQBivariateSpline           |                                          |
+| RectBivariateSpline          | Spline2D() with 2-d z array              |
+| SmoothSphereBivariateSpline  |                                          |
+| LSQSphereBivariateSpline     |                                          |
+| RectSphereBivariateSpline    |                                          |
 
 
 

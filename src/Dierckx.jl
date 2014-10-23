@@ -180,10 +180,11 @@ end
 # ----------------------------------------------------------------------------
 # 2-d splines
 
-# NOTE REGARDING ARGUMENT ORDER: The fortran functions expects z to
-# have shape (my, mx), but we'd rather have x be the fast axis in z.
-# So, in the ccall()s, all the x and y related inputs are swapped with
-# regard to what the Fortran documentation says.
+# NOTE REGARDING ARGUMENT ORDER: In the "grid" version of the Spline2D
+# constructor and evaluators, the fortran functions expects z to have
+# shape (my, mx), but we'd rather have x be the fast axis in z.  So,
+# in the ccall()s in these methods, all the x and y related inputs are
+# swapped with regard to what the Fortran documentation says.
 
 const _fit2d_messages = [
 -3=>
@@ -252,12 +253,146 @@ type Spline2D
     fp::Float64
 end
 
+function calc_surfit_lwrk1(m, kx, ky, nxest, nyest)
+    u = nxest - kx - 1
+    v = nyest - ky - 1
+    km = max(kx, ky) + 1
+    ne = max(nxest, nyest)
+    bx = kx*v + ky + 1
+    by = ky*u + kx + 1
+    b1 = b2 = 0
+    if (bx<=by)
+        b1 = bx
+        b2 = bx + v - ky
+    else
+        b1 = by
+        b2 = by + u - kx
+    end
+    return u*v*(2 + b1 + b2) + 2*(u+v+km*(m+ne)+ne-kx-ky) + b2 + 1
+end
+
+# Construct spline from unstructured data
+function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Vector{Float64};
+                  w::Vector{Float64}=ones(length(x)), kx::Int=3, ky::Int=3,
+                  s::Float64=0.0)
+
+    # arary sizes
+    m = length(x)
+    (length(y) == length(z) == m) || error("lengths of x, y, z must match") 
+    (length(w) == m) || error("length of w must match other inputs")
+
+    nxest = max(kx+1+iceil(sqrt(m/2)), 2*(kx+1))
+    nyest = max(ky+1+iceil(sqrt(m/2)), 2*(ky+1))
+    nmax = max(nxest, nyest)
+
+    # eps
+    eps = 1.0e-16
+
+    # bounds
+    xb = minimum(x)
+    xe = maximum(x)
+    yb = minimum(y)
+    ye = maximum(y)
+
+    # return values
+    nx = Array(Int32, 1)
+    tx = Array(Float64, nxest)
+    ny = Array(Int32, 1)
+    ty = Array(Float64, nyest)
+    c = Array(Float64, (nxest-kx-1) * (nyest-ky-1))
+    fp = Array(Float64, 1)
+    ier = Array(Int32, 1)
+    
+    # work arrays
+    lwrk1 = calc_surfit_lwrk1(m, kx, ky, nxest, nyest)
+    lwrk2 = 1
+    kwrk = m + (nxest - 2*kx - 1) * (nyest - 2*ky - 1)
+    wrk1 = Array(Float64, lwrk1)
+    wrk2 = Array(Float64, lwrk2)
+    iwrk = Array(Int32, kwrk)
+
+    ccall((:surfit_, ddierckx), Void,
+          (Ptr{Int32}, Ptr{Int32},  # iopt, m
+           Ptr{Float64}, Ptr{Float64},  # x, y
+           Ptr{Float64}, Ptr{Float64},  # z, w
+           Ptr{Float64}, Ptr{Float64},  # xb, xe
+           Ptr{Float64}, Ptr{Float64},  # yb, ye
+           Ptr{Int32}, Ptr{Int32}, Ptr{Float64},  # kx, ky, s
+           Ptr{Int32}, Ptr{Int32}, Ptr{Int32},  # nxest, nyest, nmax
+           Ptr{Float64},  # eps
+           Ptr{Int32}, Ptr{Float64},  # nx, tx
+           Ptr{Int32}, Ptr{Float64},  # ny, ty
+           Ptr{Float64}, Ptr{Float64},  # c, fp
+           Ptr{Float64}, Ptr{Int32},  # wrk1, lwrk1
+           Ptr{Float64}, Ptr{Int32},  # wrk2, lwrk2
+           Ptr{Int32}, Ptr{Int32}, Ptr{Int32}),   # iwrk, kwrk, ier
+          &0, &m, x, y, z, w, &xb, &xe, &yb, &ye, &kx, &ky, &s,
+          &nxest, &nyest, &nmax, &eps, nx, tx, ny, ty, c, fp,
+          wrk1, &lwrk1, wrk2, &lwrk2, iwrk, &kwrk, ier)
+
+    if ier[1] > 10
+        # lwrk2 is too small, i.e., there is not enough workspace
+        # for computing the minimal least-squares solution of a rank
+        # deficient system of linear equations. ier gives the
+        # requested value for lwrk2. Rerun with that value in "continue"
+        # mode, with iopt = 1.
+        lwrk2 = ier[1]
+        wrk2 = Array(Float64, lwrk2)
+        ccall((:surfit_, ddierckx), Void,
+              (Ptr{Int32}, Ptr{Int32},  # iopt, m
+               Ptr{Float64}, Ptr{Float64},  # x, y
+               Ptr{Float64}, Ptr{Float64},  # z, w
+               Ptr{Float64}, Ptr{Float64},  # xb, xe
+               Ptr{Float64}, Ptr{Float64},  # yb, ye
+               Ptr{Int32}, Ptr{Int32}, Ptr{Float64},  # kx, ky, s
+               Ptr{Int32}, Ptr{Int32}, Ptr{Int32},  # nxest, nyest, nmax
+               Ptr{Float64},  # eps
+               Ptr{Int32}, Ptr{Float64},  # nx, tx
+               Ptr{Int32}, Ptr{Float64},  # ny, ty
+               Ptr{Float64}, Ptr{Float64},  # c, fp
+               Ptr{Float64}, Ptr{Int32},  # wrk1, lwrk1
+               Ptr{Float64}, Ptr{Int32},  # wrk2, lwrk2
+               Ptr{Int32}, Ptr{Int32}, Ptr{Int32}),   # iwrk, kwrk, ier
+              &1, &m, x, y, z, w, &xb, &xe, &yb, &ye, &kx, &ky, &s,
+              &nxest, &nyest, &nmax, &eps, nx, tx, ny, ty, c, fp,
+              wrk1, &lwrk1, wrk2, &lwrk2, iwrk, &kwrk, ier)
+    end
+
+    if (ier[1] == 0 || ier[1] == -1 || ier[1] == -2)
+        # good values, pass.
+    else if ier[1] < -2
+        warn("""
+        The coefficients of the spline returned have been
+        computed as the minimal norm least-squares solution of a
+        (numerically) rank deficient system. The rank is $(-ier[1]).
+        The rank deficiency is $((nx[1]-kx-1)*(ny[1]-ky-1)+ier[1]).
+        Especially if the rank deficiency is large the results may
+        be inaccurate.""") 
+        # The results could also seriously depend on thevalue of
+        # eps (not in message because eps is currently not an input)
+    else
+        error(_fit2d_messages[ier[1]])
+    end
+            
+    # Resize output arrays to the size actually used.
+    resize!(tx, nx[1])
+    resize!(ty, ny[1])
+    resize!(c, (nx[1] - kx - 1) * (ny[1] - ky - 1))
+    
+    return Spline2D(tx, ty, c, kx, ky, fp[1])
+end
+
+
+
 # Construct spline from data on a grid.
 function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Array{Float64,2};
                   kx::Int=3, ky::Int=3, s::Float64=0.0)
     mx = length(x)
     my = length(y)
     assert(size(z, 1) == mx && size(z, 2) == my)
+
+    mx > kx || error("length(x) must be greater than kx")
+    my > ky || error("length(y) must be greater than ky")
     
     # Bounds
     xb = x[1]
@@ -266,12 +401,7 @@ function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Array{Float64,2};
     ye = y[end]
     nxest = mx+kx+1
     nyest = my+ky+1
-    
-    assert(mx > kx)
-    assert(my > ky)
-    assert(nxest >= 2 * (kx + 1))
-    assert(nyest >= 2 * (ky + 1))
-    
+
     # Return values
     nx = Array(Int32, 1)
     tx = Array(Float64, nxest)
@@ -283,7 +413,7 @@ function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Array{Float64,2};
     
     # Work arrays.
     # Note that in lwrk, x and y are swapped with respect to the Fortran
-    # documentation. See note above. 
+    # documentation. See "NOTE REGARDING ARGUMENT ORDER" above. 
     lwrk = (4 + nyest * (mx+2*ky+5) + nxest * (2*kx+5) +
             my*(ky+1) + mx*(kx+1) + max(mx, nyest))
     wrk = Array(Float64, lwrk)
