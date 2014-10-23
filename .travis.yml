@@ -4,9 +4,9 @@ compiler:
 notifications:
   email: false
 env:
-  matrix:
-    - JULIAVERSION="juliareleases"
-    - JULIAVERSION="julianightlies"
+  matrix: 
+    - JULIAVERSION="juliareleases" 
+    - JULIAVERSION="julianightlies" 
 before_install:
   - sudo add-apt-repository ppa:staticfloat/julia-deps -y
   - sudo add-apt-repository ppa:staticfloat/${JULIAVERSION} -y
@@ -14,4 +14,7 @@ before_install:
   - sudo apt-get install libpcre3-dev julia -y
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 script:
-  - julia -e 'Pkg.init(); Pkg.clone(pwd()); Pkg.test("Dierckx")'
+  - julia -e 'Pkg.init(); Pkg.clone(pwd())'
+  - julia -e 'Pkg.test("Dierckx"; coverage=true)'
+after_success:
+  - julia -e 'cd(Pkg.dir("Dierckx")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'

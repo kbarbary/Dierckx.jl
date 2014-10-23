@@ -3,6 +3,10 @@ Dierckx.jl
 
 *Julia library for 1-d and 2-d splines*
 
+[![Build Status](https://travis-ci.org/kbarbary/Dierckx.jl.svg?branch=master)](https://travis-ci.org/kbarbary/Dierckx.jl)
+[![Coverage Status](https://coveralls.io/repos/kbarbary/Dierckx.jl/badge.png?branch=master)](https://coveralls.io/r/kbarbary/Dierckx.jl?branch=master)
+
+
 This is a Julia wrapper for the
 [dierckx](http://www.netlib.org/dierckx/index.html) Fortran library,
 the same library underlying the spline classes in scipy.interpolate.
