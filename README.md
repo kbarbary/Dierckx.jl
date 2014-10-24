@@ -22,17 +22,31 @@ Install
 julia> Pkg.add("git://github.com/kbarbary/Dierckx.jl.git")
 ```
 
+The Fortran library source code is distributed with the package, so
+you need a Fortran compiler. On Ubuntu, `sudo apt-get install gfortran`
+will do it. OSX is not yet supported.
+
 Example Usage
 -------------
 
 ```julia
 using Dierckx
 
+# -------------------------------------------------------
+# 1-d splines
+
+x = [0., 1., 2., 3., 4.]
+y = [0., 1., 8., 27., 64.]
+spl = Spline1D(x, y)
+evaluate(spl, [1.5, 2.5])  # result = [3.375, 15.625]
+evaluate(spl, 1.5)  # result = 3.375
+
+# -------------------------------------------------------
+# 2-d splines
+
 x = [0.5, 2., 3., 4., 5.5, 8.]
 y = [0.5, 2., 3., 4.]
-
-# size of z is (length(x), length(y))
-z = [1. 2. 1. 2.;
+z = [1. 2. 1. 2.;  # size is (length(x), length(y))
      1. 2. 1. 2.;
      1. 2. 3. 2.;
      1. 2. 2. 2.;
@@ -59,12 +73,17 @@ Reference
 ### 1-d Splines
 
 ```julia
-Spline1D(x, y; w=ones(length(x)), k=3, s=0.0)
-Spline1D(x, y, xknots; w=ones(length(x)), k=3)
+Spline1D(x, y; w=ones(length(x)), k=3, bc="nearest", s=0.0)
+Spline1D(x, y, xknots; w=ones(length(x)), k=3, bc="nearest")
 ```
 
 Create a spline from vectors `x` and `y` of degree `k` (1 = linear, 2
-= quadratic, 3 = cubic, etc). In the first form, the position and
+= quadratic, 3 = cubic, up to 5). `bc` specifies the behavior when
+evaluating the spline outside the support domain (minimum(x),
+maximum(x)). Allowed values are "nearest", "zero", "extrapolate",
+"error".
+
+In the first form, the position and
 number of knots is chosen automatically. The smoothness of the spline
 is then achieved by minimalizing the discontinuity jumps of the `k`th
 derivative of the spline at the knots. The amount of smoothness is
@@ -91,11 +110,12 @@ increasing.
 ### 2-d Splines
 
 ```julia
+Spline2D(x, y, z; w=ones(length(x)), kx=3, ky=3, s=0.0)
 Spline2D(x, y, z; kx=3, ky=3, s=0.0)
 ```
 
 Fit a 2-d spline to data points in `x`, `y`, `z`. `x` and `y` must be
-vectors.
+Vectors.
 
 If `z` is also a vector, the inputs are assumed to represent
 unstructured data, with `z[i]` being the function value at point
@@ -109,8 +129,9 @@ that `size(z) == (length(x), length(y))`.
 evaluate(spl, x, y)
 ```
 
-Evalute the 2-d spline `spl` at points `(x[i], y[i])`. Points outside
-the domain of the spline are set to the values at the boundary.
+Evalute the 2-d spline `spl` at points `(x[i], y[i])`. Inputs can be
+Vectors or scalars. Points outside the domain of the spline are set to
+the values at the boundary.
 
 ```julia
 evalgrid(spl, x, y)
