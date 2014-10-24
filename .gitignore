@@ -2,5 +2,8 @@
 *.o
 *.so
 
+# test coverage
+*.cov
+
 # emacs
 *~

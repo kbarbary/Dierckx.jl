@@ -3,7 +3,10 @@ module Dierckx
 export Spline1D,
        Spline2D,
        evaluate,
-       evalgrid
+       evalgrid,
+       get_knots,
+       get_coeffs,
+       get_residual
 
 const ddierckx = joinpath(dirname(@__FILE__),
                           "../deps/src/ddierckx/libddierckx")
@@ -50,17 +53,27 @@ const _eval1d_messages = [
 """Invalid input data. The following conditions must hold:
 length(x) != 0 and xb <= x[1] <= x[2] <= ... x[end] <= xe"""]
 
+_translate_bc(bc::String) = (bc == "extrapolate" ? 0 :
+                             bc == "zero" ? 1 :
+                             bc == "error" ? 2 :
+                             bc == "nearest" ? 3 :
+                             error("unknown boundary condition: \"$bc\""))
 
 type Spline1D
     t::Vector{Float64}
     c::Vector{Float64}
     k::Int
+    bc::Int
     fp::Float64
 end
 
+get_knots(spl::Spline1D) = spl.t[spl.k+1:end-spl.k]
+get_coeffs(spl::Spline1D) = spl.c[1:end-spl.k+1]
+get_residual(spl::Spline1D) = spl.fp
+
 function Spline1D(x::Vector{Float64}, y::Vector{Float64};
                   w::Vector{Float64}=ones(length(x)),
-                  k::Int=3, s::Float64=0.0)
+                  k::Int=3, s::Real=0.0, bc::String="nearest")
     m = length(x)
     length(y) == m || error("length of x and y must match")
     length(w) == m || error("length of x and w must match")
@@ -88,7 +101,7 @@ function Spline1D(x::Vector{Float64}, y::Vector{Float64};
            Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # t, c, fp
            Ptr{Float64}, Ptr{Int32}, Ptr{Int32},  # wrk, lwrk, iwrk
            Ptr{Int32}),  # ier
-          &0, &m, x, y, w, &x[1], &x[end], &k, &s, &nest,
+          &0, &m, x, y, w, &x[1], &x[end], &k, &float64(s), &nest,
           n, t, c, fp, wrk, &lwrk, iwrk, ier)
 
     ier[1] <= 0 || error(_fit1d_messages[ier[1]])
@@ -97,7 +110,7 @@ function Spline1D(x::Vector{Float64}, y::Vector{Float64};
     resize!(t, n[1])
     resize!(c, n[1] - k - 1)
 
-    return Spline1D(t, c, k, fp[1])
+    return Spline1D(t, c, k, _translate_bc(bc), fp[1])
 end
 
 
@@ -105,7 +118,7 @@ end
 function Spline1D(x::Vector{Float64}, y::Vector{Float64},
                   xknots::Vector{Float64};
                   w::Vector{Float64}=ones(length(x)),
-                  k::Int=3)
+                  k::Int=3, bc::String="nearest")
     m = length(x)
     length(y) == m || error("length of x and y must match")
     length(w) == m || error("length of x and w must match")
@@ -138,13 +151,13 @@ function Spline1D(x::Vector{Float64}, y::Vector{Float64},
            Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # t, c, fp
            Ptr{Float64}, Ptr{Int32}, Ptr{Int32},  # wrk, lwrk, iwrk
            Ptr{Int32}),  # ier
-          &-1, &m, x, y, w, &x[1], &x[end], &k, &(-1.0), &n,
+          &(-1), &m, x, y, w, &x[1], &x[end], &k, &(-1.0), &n,
           &n, t, c, fp, wrk, &lwrk, iwrk, ier)
 
     ier[1] <= 0 || error(_fit1d_messages[ier[1]])
     resize!(c, n-k-1)
 
-    return Spline1D(t, c, k, fp[1])
+    return Spline1D(t, c, k, _translate_bc(bc), fp[1])
 end
 
 
@@ -158,7 +171,7 @@ function evaluate(spline::Spline1D, x::Vector{Float64})
            Ptr{Float64}, Ptr{Float64}, Ptr{Int32},  # x, y, m
            Ptr{Int32}, Ptr{Int32}),  # e, ier
           spline.t, &length(spline.t), spline.c, &spline.k,
-          x, y, &m, &0, ier)
+          x, y, &m, &spline.bc, ier)
     ier[1] == 0 || error(_eval1d_messages[ier[1]])
     return y
 end
@@ -170,9 +183,9 @@ function evaluate(spline::Spline1D, x::FloatingPoint)
           (Ptr{Float64}, Ptr{Int32},  # t, n
            Ptr{Float64}, Ptr{Int32},  # c, k
            Ptr{Float64}, Ptr{Float64}, Ptr{Int32},  # x, y, m
-           Ptr{Int32}, Ptr{Int32}),  # m, ier
+           Ptr{Int32}, Ptr{Int32}),  # e, ier
           spline.t, &length(spline.t), spline.c, &spline.k,
-          &x, y, &1, &0, ier)
+          &x, y, &1, &spline.bc, ier)
     ier[1] == 0 || error(_eval1d_messages[ier[1]])
     return y[1]
 end
@@ -253,6 +266,13 @@ type Spline2D
     fp::Float64
 end
 
+get_knots(spl::Spline2D) = (spl.tx[spl.kx+1:end-spl.kx],
+                            spl.ty[spl.ky+1:end-spl.ky])
+get_residual(spl::Spline2D) = spl.fp
+
+
+# Helper function for calculating required size of work array in surfit.
+# Note that x and y here are as in the Fortran documentation.
 function calc_surfit_lwrk1(m, kx, ky, nxest, nyest)
     u = nxest - kx - 1
     v = nyest - ky - 1
@@ -274,7 +294,7 @@ end
 # Construct spline from unstructured data
 function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Vector{Float64};
                   w::Vector{Float64}=ones(length(x)), kx::Int=3, ky::Int=3,
-                  s::Float64=0.0)
+                  s::Real=0.0)
 
     # arary sizes
     m = length(x)
@@ -285,7 +305,6 @@ function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Vector{Float64};
     nyest = max(ky+1+iceil(sqrt(m/2)), 2*(ky+1))
     nmax = max(nxest, nyest)
 
-    # eps
     eps = 1.0e-16
 
     # bounds
@@ -304,7 +323,8 @@ function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Vector{Float64};
     ier = Array(Int32, 1)
     
     # work arrays
-    lwrk1 = calc_surfit_lwrk1(m, kx, ky, nxest, nyest)
+    # Note: in lwrk1, x and y are swapped on purpose.
+    lwrk1 = calc_surfit_lwrk1(m, ky, kx, nyest, nxest)
     lwrk2 = 1
     kwrk = m + (nxest - 2*kx - 1) * (nyest - 2*ky - 1)
     wrk1 = Array(Float64, lwrk1)
@@ -313,21 +333,21 @@ function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Vector{Float64};
 
     ccall((:surfit_, ddierckx), Void,
           (Ptr{Int32}, Ptr{Int32},  # iopt, m
-           Ptr{Float64}, Ptr{Float64},  # x, y
+           Ptr{Float64}, Ptr{Float64},  # y, x
            Ptr{Float64}, Ptr{Float64},  # z, w
-           Ptr{Float64}, Ptr{Float64},  # xb, xe
            Ptr{Float64}, Ptr{Float64},  # yb, ye
-           Ptr{Int32}, Ptr{Int32}, Ptr{Float64},  # kx, ky, s
-           Ptr{Int32}, Ptr{Int32}, Ptr{Int32},  # nxest, nyest, nmax
+           Ptr{Float64}, Ptr{Float64},  # xb, xe
+           Ptr{Int32}, Ptr{Int32}, Ptr{Float64},  # ky, kx, s
+           Ptr{Int32}, Ptr{Int32}, Ptr{Int32},  # nyest, nxest, nmax
            Ptr{Float64},  # eps
+           Ptr{Int32}, Ptr{Float64},  # ny, tx
            Ptr{Int32}, Ptr{Float64},  # nx, tx
-           Ptr{Int32}, Ptr{Float64},  # ny, ty
            Ptr{Float64}, Ptr{Float64},  # c, fp
            Ptr{Float64}, Ptr{Int32},  # wrk1, lwrk1
            Ptr{Float64}, Ptr{Int32},  # wrk2, lwrk2
            Ptr{Int32}, Ptr{Int32}, Ptr{Int32}),   # iwrk, kwrk, ier
-          &0, &m, x, y, z, w, &xb, &xe, &yb, &ye, &kx, &ky, &s,
-          &nxest, &nyest, &nmax, &eps, nx, tx, ny, ty, c, fp,
+          &0, &m, y, x, z, w, &yb, &ye, &xb, &xe, &ky, &kx, &float64(s),
+          &nyest, &nxest, &nmax, &eps, ny, ty, nx, tx, c, fp,
           wrk1, &lwrk1, wrk2, &lwrk2, iwrk, &kwrk, ier)
 
     if ier[1] > 10
@@ -337,24 +357,24 @@ function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Vector{Float64};
         # requested value for lwrk2. Rerun with that value in "continue"
         # mode, with iopt = 1.
         lwrk2 = ier[1]
-        wrk2 = Array(Float64, lwrk2)
+        resize!(wrk2, lwrk2)
         ccall((:surfit_, ddierckx), Void,
               (Ptr{Int32}, Ptr{Int32},  # iopt, m
-               Ptr{Float64}, Ptr{Float64},  # x, y
+               Ptr{Float64}, Ptr{Float64},  # y, x
                Ptr{Float64}, Ptr{Float64},  # z, w
-               Ptr{Float64}, Ptr{Float64},  # xb, xe
                Ptr{Float64}, Ptr{Float64},  # yb, ye
-               Ptr{Int32}, Ptr{Int32}, Ptr{Float64},  # kx, ky, s
-               Ptr{Int32}, Ptr{Int32}, Ptr{Int32},  # nxest, nyest, nmax
+               Ptr{Float64}, Ptr{Float64},  # xb, xe
+               Ptr{Int32}, Ptr{Int32}, Ptr{Float64},  # ky, kx, s
+               Ptr{Int32}, Ptr{Int32}, Ptr{Int32},  # nyest, nxest, nmax
                Ptr{Float64},  # eps
+               Ptr{Int32}, Ptr{Float64},  # ny, tx
                Ptr{Int32}, Ptr{Float64},  # nx, tx
-               Ptr{Int32}, Ptr{Float64},  # ny, ty
                Ptr{Float64}, Ptr{Float64},  # c, fp
                Ptr{Float64}, Ptr{Int32},  # wrk1, lwrk1
                Ptr{Float64}, Ptr{Int32},  # wrk2, lwrk2
                Ptr{Int32}, Ptr{Int32}, Ptr{Int32}),   # iwrk, kwrk, ier
-              &1, &m, x, y, z, w, &xb, &xe, &yb, &ye, &kx, &ky, &s,
-              &nxest, &nyest, &nmax, &eps, nx, tx, ny, ty, c, fp,
+              &1, &m, y, x, z, w, &yb, &ye, &xb, &xe, &ky, &kx, &s,
+              &nyest, &nxest, &nmax, &eps, ny, ty, nx, tx, c, fp,
               wrk1, &lwrk1, wrk2, &lwrk2, iwrk, &kwrk, ier)
     end
 
@@ -368,8 +388,8 @@ function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Vector{Float64};
         The rank deficiency is $((nx[1]-kx-1)*(ny[1]-ky-1)+ier[1]).
         Especially if the rank deficiency is large the results may
         be inaccurate.""") 
-        # The results could also seriously depend on thevalue of
-        # eps (not in message because eps is currently not an input)
+        # "The results could also seriously depend on the value of
+        # eps" (not in message because eps is currently not an input)
     else
         error(_fit2d_messages[ier[1]])
     end
@@ -386,7 +406,7 @@ end
 
 # Construct spline from data on a grid.
 function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Array{Float64,2};
-                  kx::Int=3, ky::Int=3, s::Float64=0.0)
+                  kx::Int=3, ky::Int=3, s::Real=0.0)
     mx = length(x)
     my = length(y)
     assert(size(z, 1) == mx && size(z, 2) == my)
@@ -435,7 +455,7 @@ function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Array{Float64,2};
            Ptr{Float64}, Ptr{Int32},  # wrk, lwrk
            Ptr{Int32}, Ptr{Int32},  # iwrk, lwrk
            Ptr{Int32}),  # ier
-          &0f0, &my, y, &mx, x, z, &yb, &ye, &xb, &xe, &ky, &kx, &s,
+          &0f0, &my, y, &mx, x, z, &yb, &ye, &xb, &xe, &ky, &kx, &float64(s),
           &nyest, &nxest, ny, ty, nx, tx, c, fp,
           wrk, &lwrk, iwrk, &kwrk, ier)
     
@@ -481,6 +501,28 @@ function evaluate(spline::Spline2D, x::Vector{Float64},
     return z
 end
 
+function evaluate(spline::Spline2D, x::Float64, y::Float64)
+    ier = Array(Int32, 1)
+    lwrk = spline.kx + spline.ky + 2
+    wrk = Array(Float64, lwrk)
+    z = Array(Float64, 1)
+    ccall((:bispeu_, ddierckx), Void,
+          (Ptr{Float64}, Ptr{Int32},  # ty, ny
+           Ptr{Float64}, Ptr{Int32},  # tx, nx
+           Ptr{Float64},  # c
+           Ptr{Int32}, Ptr{Int32},  # ky, kx
+           Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # y, x, z
+           Ptr{Int32},  # m
+           Ptr{Float64}, Ptr{Int32}, Ptr{Int32}),  # wrk, lwrk, ier
+          spline.ty, &length(spline.ty),
+          spline.tx, &length(spline.tx),
+          spline.c, &spline.ky, &spline.kx, &y, &x, z, &1,
+          wrk, &lwrk, ier)
+    
+    ier[1] == 0 || error(_eval2d_message)
+    return z[1]
+end
+
 # Evaluate spline on the grid spanned by the input arrays.
 function evalgrid(spline::Spline2D, x::Vector{Float64},
                   y::Vector{Float64})
@@ -489,7 +531,7 @@ function evalgrid(spline::Spline2D, x::Vector{Float64},
 
     lwrk = mx*(spline.kx + 1) + my*(spline.ky + 1)
     wrk = Array(Float64, lwrk)
-    kwrk = mx * my
+    kwrk = mx + my
     iwrk = Array(Int32, kwrk)
     ier = Array(Int32, 1)
     z = Array(Float64, mx, my)
@@ -510,7 +552,7 @@ function evalgrid(spline::Spline2D, x::Vector{Float64},
           spline.c, &spline.ky, &spline.kx, y, &my, x, &mx, z,
           wrk, &lwrk, iwrk, &kwrk, ier)
 
-    ier[1] == 0 || error(_evalute_message)
+    ier[1] == 0 || error(_eval2d_message)
     
     return z
 end

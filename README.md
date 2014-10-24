@@ -129,17 +129,17 @@ be similar or better than the `scipy.interpolate` classes. (Better for
 small arrays where Python overhead is more significant.) The
 equivalent of a specific classes in `scipy.interpolate`:
 
-| scipy.interpolate class      | Dierckx.jl constructor method            |
-| ---------------------------- | ---------------------------------------- |
-| UnivariateSpline             | Spline1D(x, y)                           |
-| InterpolatedUnivariateSpline | Spline1D(x, y; s=0.0) [s=0.0 is default] |
-| LSQUnivariateSpline          | Spline1D(x, y, xknots)                   |
-| SmoothBivariateSpline        | Spline2D()                               |
-| LSQBivariateSpline           |                                          |
-| RectBivariateSpline          | Spline2D() with 2-d z array              |
-| SmoothSphereBivariateSpline  |                                          |
-| LSQSphereBivariateSpline     |                                          |
-| RectSphereBivariateSpline    |                                          |
+| scipy.interpolate class      | Dierckx.jl constructor method              |
+| ---------------------------- | ------------------------------------------ |
+| UnivariateSpline             | `Spline1D(x, y; s=length(x))`              |
+| InterpolatedUnivariateSpline | `Spline1D(x, y; s=0.0)`                    |
+| LSQUnivariateSpline          | `Spline1D(x, y, xknots)`                   |
+| SmoothBivariateSpline        | `Spline2D(x, y, z; s=length(x))`           |
+| LSQBivariateSpline           |                                            |
+| RectBivariateSpline          | `Spline2D(x, y, z; s=0.0)` (z = 2-d array) |
+| SmoothSphereBivariateSpline  |                                            |
+| LSQSphereBivariateSpline     |                                            |
+| RectSphereBivariateSpline    |                                            |
 
 
 
