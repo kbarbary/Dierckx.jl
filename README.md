@@ -19,12 +19,12 @@ Install
 -------
 
 ```julia
-julia> Pkg.add("git://github.com/kbarbary/Dierckx.jl.git")
+julia> Pkg.add("Dierckx")
 ```
 
 The Fortran library source code is distributed with the package, so
 you need a Fortran compiler. On Ubuntu, `sudo apt-get install gfortran`
-will do it. OSX may work if you have gfortran.
+will do it. OSX may or may not work.
 
 Example Usage
 -------------
@@ -80,31 +80,33 @@ Spline1D(x, y, xknots; w=ones(length(x)), k=3, bc="nearest")
 Create a spline from vectors `x` and `y` of degree `k` (1 = linear, 2
 = quadratic, 3 = cubic, up to 5). `bc` specifies the behavior when
 evaluating the spline outside the support domain (minimum(x),
-maximum(x)). Allowed values are "nearest", "zero", "extrapolate",
-"error".
+maximum(x)). The allowed values are `"nearest"`, `"zero"`,
+`"extrapolate"`, `"error"`.
 
-In the first form, the position and
-number of knots is chosen automatically. The smoothness of the spline
-is then achieved by minimalizing the discontinuity jumps of the `k`th
-derivative of the spline at the knots. The amount of smoothness is
-determined by the condition that `sum((w[i]*(y[i]-spline(x[i])))**2)
-<= s`, with `s` a given non-negative constant, called the smoothing
-factor. By means of this parameter, the user can control the tradeoff
-between closeness of fit and smoothness of fit of the approximation.
-if `s` is too large, the spline will be too smooth and signal will be
-lost ; if `s` is too small the spline will pick up too much noise. in
-the extreme cases the program will return an interpolating spline if
-`s=0.0` and the weighted least-squares polynomial of degree `k` if `s`
-is very large.
+In the first form, the number and positions of knots are chosen
+automatically. The smoothness of the spline is then achieved by
+minimalizing the discontinuity jumps of the `k`th derivative of the
+spline at the knots. The amount of smoothness is determined by the
+condition that `sum((w[i]*(y[i]-spline(x[i])))**2) <= s`, with `s` a
+given non-negative constant, called the smoothing factor. The number
+of knots is increased until the condition is satisfied.By means of
+this parameter, the user can control the tradeoff between closeness of
+fit and smoothness of fit of the approximation.  if `s` is too large,
+the spline will be too smooth and signal will be lost ; if `s` is too
+small the spline will pick up too much noise. in the extreme cases the
+program will return an interpolating spline if `s=0.0` and the
+weighted least-squares polynomial of degree `k` if `s` is very large.
 
-In the second form, the knots are supplied by the user. There is
-no smoothing parameter in this form.
+In the second form, the knots are supplied by the user. There is no
+smoothing parameter in this form. The program simply minimizes the
+discontinuity jumps of the `k`th derivative of the spline at the given
+knots.
 
 ```julia
 evaluate(spl, x)
 ```
 Evalute the 1-d spline `spl` at points given in `x`, which can be a
-Vector or scalar. If a Vector, the input arrays must be monotonically
+1-d array or scalar. If a 1-d array, the values must be monotonically
 increasing.
 
 ### 2-d Splines
@@ -114,10 +116,9 @@ Spline2D(x, y, z; w=ones(length(x)), kx=3, ky=3, s=0.0)
 Spline2D(x, y, z; kx=3, ky=3, s=0.0)
 ```
 
-Fit a 2-d spline to data points in `x`, `y`, `z`. `x` and `y` must be
-Vectors.
+Fit a 2-d spline to the input data. `x` and `y` must be 1-d arrays.
 
-If `z` is also a vector, the inputs are assumed to represent
+If `z` is also a 1-d array, the inputs are assumed to represent
 unstructured data, with `z[i]` being the function value at point
 `(x[i], y[i])`. In this case, the lengths of all inputs must match.
 
@@ -144,11 +145,11 @@ increasing.
 Translation from scipy.interpolate
 ----------------------------------
 
-The `*Spline` classes in scipy.interpolate are also thin wrappers
+The `Spline` classes in scipy.interpolate are also thin wrappers
 for the Dierckx Fortran library. The performance of Dierckx.jl should
-be similar or better than the `scipy.interpolate` classes. (Better for
+be similar or better than the scipy.interpolate classes. (Better for
 small arrays where Python overhead is more significant.) The
-equivalent of a specific classes in `scipy.interpolate`:
+equivalent of a specific classes in scipy.interpolate:
 
 | scipy.interpolate class      | Dierckx.jl constructor method              |
 | ---------------------------- | ------------------------------------------ |
