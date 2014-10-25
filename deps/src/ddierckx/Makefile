@@ -3,19 +3,18 @@
 # Usage: make LIB=<libname>
 
 LIB=ddierckx
-FC=gcc
+FC=gfortran
+SUFFIX=so
 FFLAGS=-fPIC -O3
 
 OBJ=$(patsubst %.f,%.o,$(shell ls *.f))
-all: lib$(LIB).so
+all: lib$(LIB).$(SUFFIX)
 $(OBJ):
 	$(FC) -c $(FFLAGS) $(FSHARED) $(patsubst %.o,%.f,$(@F)) -o $@
-lib$(LIB).a: $(OBJ)
-	$(AR) rus lib$(LIB).a $?
-lib$(LIB).so: $(OBJ)
-	gcc -o lib$(LIB).so -shared $?
+lib$(LIB).$(SUFFIX): $(OBJ)
+	$(FC) -o lib$(LIB).so -shared $?
 clean:
-	rm *.o *.so
+	rm *.o *.$(SUFFIX)
 
 
 

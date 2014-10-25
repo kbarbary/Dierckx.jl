@@ -1,4 +1,4 @@
-const msg = "No OSX or Windows Makefiles!"
-
 cd(joinpath(dirname(@__FILE__), "src", "ddierckx"))
-@linux? run(`make`): error(msg)
+
+suffix = @linux? "so" : @osx? "dylib" : error("only linux and osx supported")
+run(`make FC=gfortran SUFFIX=$suffix`) 

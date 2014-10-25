@@ -24,7 +24,7 @@ julia> Pkg.add("git://github.com/kbarbary/Dierckx.jl.git")
 
 The Fortran library source code is distributed with the package, so
 you need a Fortran compiler. On Ubuntu, `sudo apt-get install gfortran`
-will do it. OSX is not yet supported.
+will do it. OSX may work if you have gfortran.
 
 Example Usage
 -------------
