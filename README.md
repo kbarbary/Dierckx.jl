@@ -24,7 +24,9 @@ julia> Pkg.add("Dierckx")
 
 The Fortran library source code is distributed with the package, so
 you need a Fortran compiler. On Ubuntu, `sudo apt-get install gfortran`
-will do it. OSX may or may not work.
+will do it.
+
+Windows is not yet supported.
 
 Example Usage
 -------------
@@ -77,11 +79,11 @@ Spline1D(x, y; w=ones(length(x)), k=3, bc="nearest", s=0.0)
 Spline1D(x, y, xknots; w=ones(length(x)), k=3, bc="nearest")
 ```
 
-Create a spline from vectors `x` and `y` of degree `k` (1 = linear, 2
-= quadratic, 3 = cubic, up to 5). `bc` specifies the behavior when
-evaluating the spline outside the support domain (minimum(x),
-maximum(x)). The allowed values are `"nearest"`, `"zero"`,
-`"extrapolate"`, `"error"`.
+Create a spline of degree `k` (1 = linear, 2 = quadratic, 3 = cubic, up to 5)
+from 1-d arrays `x` and `y`. The parameter `bc` specifies the behavior when
+evaluating the spline outside the support domain, which is `(minimum(x),
+maximum(x))`. The allowed values are `"nearest"`, `"zero"`, `"extrapolate"`,
+`"error"`.
 
 In the first form, the number and positions of knots are chosen
 automatically. The smoothness of the spline is then achieved by
@@ -89,7 +91,7 @@ minimalizing the discontinuity jumps of the `k`th derivative of the
 spline at the knots. The amount of smoothness is determined by the
 condition that `sum((w[i]*(y[i]-spline(x[i])))**2) <= s`, with `s` a
 given non-negative constant, called the smoothing factor. The number
-of knots is increased until the condition is satisfied.By means of
+of knots is increased until the condition is satisfied. By means of
 this parameter, the user can control the tradeoff between closeness of
 fit and smoothness of fit of the approximation.  if `s` is too large,
 the spline will be too smooth and signal will be lost ; if `s` is too

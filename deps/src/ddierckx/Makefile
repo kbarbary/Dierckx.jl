@@ -12,7 +12,7 @@ all: lib$(LIB).$(SUFFIX)
 $(OBJ):
 	$(FC) -c $(FFLAGS) $(FSHARED) $(patsubst %.o,%.f,$(@F)) -o $@
 lib$(LIB).$(SUFFIX): $(OBJ)
-	$(FC) -o lib$(LIB).so -shared $?
+	$(FC) -o lib$(LIB).$(SUFFIX) -shared $?
 clean:
 	rm *.o *.$(SUFFIX)
 
