@@ -23,10 +23,10 @@ julia> Pkg.add("Dierckx")
 ```
 
 The Fortran library source code is distributed with the package, so
-you need a Fortran compiler. On Ubuntu, `sudo apt-get install gfortran`
-will do it.
+you need a Fortran compiler on OSX or Linux. On Ubuntu,
+`sudo apt-get install gfortran` will do it.
 
-Windows is not yet supported.
+On Windows, a compiled dll will be downloaded.
 
 Example Usage
 -------------

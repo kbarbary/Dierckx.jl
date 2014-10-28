@@ -9,7 +9,7 @@ export Spline1D,
        get_residual
 
 const ddierckx = joinpath(dirname(@__FILE__),
-                          "../deps/src/ddierckx/libddierckx")
+    @unix? "../deps/src/ddierckx/libddierckx" : "../deps/bin$WORD_SIZE/libddierckx")
 
 # Ensure library is available.
 if (dlopen_e(ddierckx) == C_NULL)
