@@ -9,6 +9,8 @@ export Spline1D,
        get_coeffs,
        get_residual
 
+import Base: show
+
 unixpath = "../deps/src/ddierckx/libddierckx"
 winpath = "../deps/bin$WORD_SIZE/libddierckx"
 const ddierckx = joinpath(dirname(@__FILE__), @unix? unixpath : winpath)
@@ -60,6 +62,10 @@ _translate_bc(bc::String) = (bc == "extrapolate" ? 0 :
                              bc == "error" ? 2 :
                              bc == "nearest" ? 3 :
                              error("unknown boundary condition: \"$bc\""))
+_translate_bc(bc::Int) = (bc == 0 ? "extrapolate" :
+                          bc == 1 ? "zero" :
+                          bc == 2 ? "error" :
+                          bc == 3 ? "nearest" : "")
 
 type Spline1D
     t::Vector{Float64}
@@ -72,6 +78,36 @@ end
 get_knots(spl::Spline1D) = spl.t[spl.k+1:end-spl.k]
 get_coeffs(spl::Spline1D) = spl.c[1:end-spl.k+1]
 get_residual(spl::Spline1D) = spl.fp
+
+function reallycompact(a::Vector)
+    io = IOBuffer()
+    if length(a) <= 5
+        show(io, a)
+    else
+        write(io, "[")
+        showcompact(io, a[1])
+        write(io, ",")
+        showcompact(io, a[2])
+        write(io, " \u2026 ")
+        showcompact(io, a[end-1])
+        write(io, ",")
+        showcompact(io, a[end])
+        write(io, "]")
+        write(io, " ($(length(a)) elements)")
+    end
+    seekstart(io)
+    readall(io)
+end
+
+
+function show(io::IO, spl::Spline1D)
+    print(io, """Spline1D:
+ order = $(spl.k)
+ knots = $(reallycompact(get_knots(spl)))
+ extrapolation = \"$(_translate_bc(spl.bc))\"
+ residual = $(spl.fp)
+""")
+end
 
 function Spline1D(x::Vector{Float64}, y::Vector{Float64};
                   w::Vector{Float64}=ones(length(x)),
