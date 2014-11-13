@@ -14,6 +14,15 @@ https://github.com/timholy/Grid.jl), a pure-Julia interpolation
 package. This package is intended to complement Grid.jl and to serve
 as a benchmark in cases of overlapping functionality.
 
+### Features
+
+- implements B-splines (basis splines)
+- splines from first order to fifth order; default third order (cubic)
+- fit 1-d and 2-d splines to irregular grids
+- fit 2-d splines to unstructured points
+- derivates of 1-d splines
+
+
 Install
 -------
 
@@ -32,22 +41,32 @@ Example Usage
 
 ```julia
 using Dierckx
+```
 
-# -------------------------------------------------------
-# 1-d splines
+Fit a 1-d spline to some input data (points can be unevenly spaced):
 
+```julia
 x = [0., 1., 2., 3., 4.]
 y = [0., 1., 8., 27., 64.]
 spl = Spline1D(x, y)
+```
+
+Evaluate the spline at some new points:
+
+```julia
 evaluate(spl, [1.5, 2.5])  # result = [3.375, 15.625]
 evaluate(spl, 1.5)  # result = 3.375
+```
 
-# first derivative at x=1.5
+Evaluate derivative: 
+
+```julia
 derivative(spl, 1.5)  # result = 6.75
+```
 
-# -------------------------------------------------------
-# 2-d splines
+Fit a 2-d spline to data on a (possibly irregular) grid:
 
+```julia
 x = [0.5, 2., 3., 4., 5.5, 8.]
 y = [0.5, 2., 3., 4.]
 z = [1. 2. 1. 2.;  # size is (length(x), length(y))
@@ -57,19 +76,25 @@ z = [1. 2. 1. 2.;  # size is (length(x), length(y))
      1. 2. 1. 2.;
      1. 2. 3. 1.]
 
-# Fit a 2-d spline to inputs
 spline = Spline2D(x, y, z)
+```
 
-# evaluate at element-wise points
+Evaluate at element-wise points:
+
+```julia
 xi = [1., 1.5, 2.3, 4.5, 3.3, 3.2, 3.]
 yi = [1., 2.3, 5.3, 0.5, 3.3, 1.2, 3.]
 zi = evaluate(spline, xi, yi)  # 1-d array of length 7
+```
 
-# evaluate at grid spanned by input arrays
+Evaluate at grid spanned by input arrays:
+
+```julia
 xi = [1., 1.5, 2.3, 4.5]
 yi = [1., 2.3, 5.3]
 zi = evalgrid(spline, xi, yi)  # 2-d array of size (4, 3)
 ```
+
 
 Reference
 ---------
