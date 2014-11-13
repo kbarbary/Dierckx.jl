@@ -16,11 +16,12 @@ as a benchmark in cases of overlapping functionality.
 
 ### Features
 
-- implements B-splines (basis splines)
-- splines from first order to fifth order; default third order (cubic)
-- fit 1-d and 2-d splines to irregular grids
-- fit 2-d splines to unstructured points
-- derivates of 1-d splines
+- Implements B-splines (basis splines).
+- Splines from first order to fifth order; default is third order (cubic).
+- Fit and evaluate 1-d and 2-d splines on irregular grids.
+- Fit and evaluate 2-d splines at unstructured points.
+- Fit "smooth" (non-interpolating) splines with adjustable smoothing factor s.
+- Derivatives of 1-d splines.
 
 
 Install
