@@ -67,6 +67,13 @@ spl = Spline1D(x, y; bc="error")
 # test unknown bc
 @test_throws ErrorException Spline1D(x, y; bc="unknown")
 
+# test derivative
+x = linspace(0, 1, 70)
+y = x.^3
+spl = Spline1D(x, y)
+xt = [0.3, 0.4, 0.5]
+@test_approx_eq(derivative(spl, xt), 3xt.^2)
+
 # -----------------------------------------------------------------------------
 # Spline2D
 

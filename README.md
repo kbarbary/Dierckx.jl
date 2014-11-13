@@ -42,6 +42,9 @@ spl = Spline1D(x, y)
 evaluate(spl, [1.5, 2.5])  # result = [3.375, 15.625]
 evaluate(spl, 1.5)  # result = 3.375
 
+# first derivative at x=1.5
+derivative(spl, 1.5)  # result = 6.75
+
 # -------------------------------------------------------
 # 2-d splines
 
@@ -78,37 +81,45 @@ Spline1D(x, y; w=ones(length(x)), k=3, bc="nearest", s=0.0)
 Spline1D(x, y, xknots; w=ones(length(x)), k=3, bc="nearest")
 ```
 
-Create a spline of degree `k` (1 = linear, 2 = quadratic, 3 = cubic, up to 5)
-from 1-d arrays `x` and `y`. The parameter `bc` specifies the behavior when
-evaluating the spline outside the support domain, which is `(minimum(x),
-maximum(x))`. The allowed values are `"nearest"`, `"zero"`, `"extrapolate"`,
-`"error"`.
+- Create a spline of degree `k` (1 = linear, 2 = quadratic, 3 = cubic,
+  up to 5) from 1-d arrays `x` and `y`. The parameter `bc` specifies
+  the behavior when evaluating the spline outside the support domain,
+  which is `(minimum(x), maximum(x))`. The allowed values are
+  `"nearest"`, `"zero"`, `"extrapolate"`, `"error"`.
 
-In the first form, the number and positions of knots are chosen
-automatically. The smoothness of the spline is then achieved by
-minimalizing the discontinuity jumps of the `k`th derivative of the
-spline at the knots. The amount of smoothness is determined by the
-condition that `sum((w[i]*(y[i]-spline(x[i])))**2) <= s`, with `s` a
-given non-negative constant, called the smoothing factor. The number
-of knots is increased until the condition is satisfied. By means of
-this parameter, the user can control the tradeoff between closeness of
-fit and smoothness of fit of the approximation.  if `s` is too large,
-the spline will be too smooth and signal will be lost ; if `s` is too
-small the spline will pick up too much noise. in the extreme cases the
-program will return an interpolating spline if `s=0.0` and the
-weighted least-squares polynomial of degree `k` if `s` is very large.
+  In the first form, the number and positions of knots are chosen
+  automatically. The smoothness of the spline is then achieved by
+  minimalizing the discontinuity jumps of the `k`th derivative of the
+  spline at the knots. The amount of smoothness is determined by the
+  condition that `sum((w[i]*(y[i]-spline(x[i])))**2) <= s`, with `s` a
+  given non-negative constant, called the smoothing factor. The number
+  of knots is increased until the condition is satisfied. By means of
+  this parameter, the user can control the tradeoff between closeness
+  of fit and smoothness of fit of the approximation.  if `s` is too
+  large, the spline will be too smooth and signal will be lost ; if
+  `s` is too small the spline will pick up too much noise. in the
+  extreme cases the program will return an interpolating spline if
+  `s=0.0` and the weighted least-squares polynomial of degree `k` if
+  `s` is very large.
 
-In the second form, the knots are supplied by the user. There is no
-smoothing parameter in this form. The program simply minimizes the
-discontinuity jumps of the `k`th derivative of the spline at the given
-knots.
+  In the second form, the knots are supplied by the user. There is no
+  smoothing parameter in this form. The program simply minimizes the
+  discontinuity jumps of the `k`th derivative of the spline at the
+  given knots.
 
 ```julia
 evaluate(spl, x)
 ```
-Evalute the 1-d spline `spl` at points given in `x`, which can be a
-1-d array or scalar. If a 1-d array, the values must be monotonically
-increasing.
+
+- Evalute the 1-d spline `spl` at points given in `x`, which can be a
+  1-d array or scalar. If a 1-d array, the values must be monotonically
+  increasing.
+
+```julia
+derivative(spl, x; nu=1)
+```
+
+- Evaluate the `nu`-th derivative of the spline at points in `x`.
 
 ### 2-d Splines
 
@@ -117,31 +128,31 @@ Spline2D(x, y, z; w=ones(length(x)), kx=3, ky=3, s=0.0)
 Spline2D(x, y, z; kx=3, ky=3, s=0.0)
 ```
 
-Fit a 2-d spline to the input data. `x` and `y` must be 1-d arrays.
+- Fit a 2-d spline to the input data. `x` and `y` must be 1-d arrays.
 
-If `z` is also a 1-d array, the inputs are assumed to represent
-unstructured data, with `z[i]` being the function value at point
-`(x[i], y[i])`. In this case, the lengths of all inputs must match.
+  If `z` is also a 1-d array, the inputs are assumed to represent
+  unstructured data, with `z[i]` being the function value at point
+  `(x[i], y[i])`. In this case, the lengths of all inputs must match.
 
-If `z` is a 2-d array, the data are assumed to be gridded: `z[i, j]`
-is the function value at `(x[i], y[j])`. In this case, it is required
-that `size(z) == (length(x), length(y))`.
+  If `z` is a 2-d array, the data are assumed to be gridded: `z[i, j]`
+  is the function value at `(x[i], y[j])`. In this case, it is required
+  that `size(z) == (length(x), length(y))`.
 
 ```julia
 evaluate(spl, x, y)
 ```
 
-Evalute the 2-d spline `spl` at points `(x[i], y[i])`. Inputs can be
-Vectors or scalars. Points outside the domain of the spline are set to
-the values at the boundary.
+- Evalute the 2-d spline `spl` at points `(x[i], y[i])`. Inputs can be
+  Vectors or scalars. Points outside the domain of the spline are set to
+  the values at the boundary.
 
 ```julia
 evalgrid(spl, x, y)
 ```
 
-Evaluate the 2-d spline `spl` at the grid points spanned by the
-coordinate arrays `x` and `y`. The input arrays must be monotonically
-increasing.
+- Evaluate the 2-d spline `spl` at the grid points spanned by the
+  coordinate arrays `x` and `y`. The input arrays must be monotonically
+  increasing.
 
 Translation from scipy.interpolate
 ----------------------------------

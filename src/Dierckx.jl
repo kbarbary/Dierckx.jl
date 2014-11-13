@@ -3,13 +3,15 @@ module Dierckx
 export Spline1D,
        Spline2D,
        evaluate,
+       derivative,
        evalgrid,
        get_knots,
        get_coeffs,
        get_residual
 
-const ddierckx = joinpath(dirname(@__FILE__),
-    @unix? "../deps/src/ddierckx/libddierckx" : "../deps/bin$WORD_SIZE/libddierckx")
+unixpath = "../deps/src/ddierckx/libddierckx"
+winpath = "../deps/bin$WORD_SIZE/libddierckx"
+const ddierckx = joinpath(dirname(@__FILE__), @unix? unixpath : winpath)
 
 # Ensure library is available.
 if (dlopen_e(ddierckx) == C_NULL)
@@ -176,6 +178,7 @@ function evaluate(spline::Spline1D, x::Vector{Float64})
     return y
 end
 
+
 function evaluate(spline::Spline1D, x::FloatingPoint)
     y = Array(Float64, 1)
     ier = Array(Int32, 1)
@@ -189,6 +192,44 @@ function evaluate(spline::Spline1D, x::FloatingPoint)
     ier[1] == 0 || error(_eval1d_messages[ier[1]])
     return y[1]
 end
+
+
+# TODO: should the function name be evalder, derivative, or grad?
+#       or should it be integrated with evaluate, above?
+#       (problem with that: derivative doesn't accept bc="nearest")
+# TODO: should `nu` be `d`?
+function derivative(spline::Spline1D, x::Vector{Float64}; nu::Integer=1)
+
+    # Unlike evaluate, this Fortran function doesn't accept bc="nearest".
+    # However, "nearest" gives a derivative of 0 for all nu outside the 
+    # support range, so the answer will be the same as bc="zero".
+    bc = spline.bc == 3 ? 1 : spline.bc
+
+    # Check derivate requested.
+    if !(1 <= nu <= spline.k)
+        error("nu must be positive and less than or equal to spline order")
+    end
+
+    m = length(x)
+    n = length(spline.t)
+    wrk = Array(Float64, n)
+    y = Array(Float64, m)
+    ier = Array(Int32, 1)
+    ccall((:splder_, ddierckx), Void,
+          (Ptr{Float64}, Ptr{Int32},  # t, n
+           Ptr{Float64}, Ptr{Int32},  # c, k
+           Ptr{Int32},  # nu
+           Ptr{Float64}, Ptr{Float64}, Ptr{Int32},  # x, y, m
+           Ptr{Int32}, Ptr{Float64}, Ptr{Int32}),  # e, wrk, ier
+          spline.t, &n, spline.c, &spline.k, &nu,
+          x, y, &m, &bc, wrk, ier)
+    ier[1] == 0 || error(_eval1d_messages[ier[1]])
+    return y
+end
+
+derivative(spline::Spline1D, x::FloatingPoint; nu::Integer=1) =
+    derivative(spline, Float64[x]; nu=nu)[1]
+
 
 # ----------------------------------------------------------------------------
 # 2-d splines
