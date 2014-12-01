@@ -99,6 +99,14 @@ z = x .+ y
 spl = Spline2D(x, y, z; s=length(x))
 @test_approx_eq(evaluate(spl, 1.0, 1.0), 2.0)
 
+# In this setting lwrk2 is too small multiple times!
+# Eventually an error about s being too small is thrown.
+srand(0)
+x = rand(100)
+y = rand(100)
+z = sin(x) .* sin(y)
+@test_throws ErrorException Spline2D(x, y, z; kx=1, ky=1, s=0.0)
+
 # test grid input creation
 x = [0.5, 2., 3., 4., 5.5, 8.]
 y = [0.5, 2., 3., 4.]

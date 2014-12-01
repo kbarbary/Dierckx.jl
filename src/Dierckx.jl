@@ -101,12 +101,7 @@ end
 
 
 function show(io::IO, spl::Spline1D)
-    print(io, """Spline1D:
- order = $(spl.k)
- knots = $(reallycompact(get_knots(spl)))
- extrapolation = \"$(_translate_bc(spl.bc))\"
- residual = $(spl.fp)
-""")
+    print(io, """Spline1D(knots=$(reallycompact(get_knots(spl))), k=$(spl.k), extrapolation=\"$(_translate_bc(spl.bc))\", residual=$(spl.fp))""")
 end
 
 function Spline1D(x::Vector{Float64}, y::Vector{Float64};
@@ -287,8 +282,8 @@ inaccurate. Deficiency may strongly depend on the value of eps.""",
 1=>
 
 """The required storage space exceeds the available storage space:
-nxest or nyest too small, or s too small.  The weighted least-squares
-spline corresponds to the current set of knots.""",
+nxest or nyest too small, or s too small. Try increasing s.""",
+# The weighted least-squares spline corresponds to the current set of knots.
 
 2=>
 
@@ -427,7 +422,7 @@ function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Vector{Float64};
           &nyest, &nxest, &nmax, &eps, ny, ty, nx, tx, c, fp,
           wrk1, &lwrk1, wrk2, &lwrk2, iwrk, &kwrk, ier)
 
-    if ier[1] > 10
+    while ier[1] > 10
         # lwrk2 is too small, i.e., there is not enough workspace
         # for computing the minimal least-squares solution of a rank
         # deficient system of linear equations. ier gives the

@@ -1,3 +1,12 @@
+v0.2.0 (unreleased)
+===================
+
+- Fix bug in Spline2D(::Vector, ::Vector, ::Vector) where an error
+  code from the Fortran library indicating that the second work array is too
+  small was not being handled.
+- add show() method for Spline1D
+- add derivative() method for Spline1D
+
 v0.1.2 (2014-11-07)
 ===================
 
