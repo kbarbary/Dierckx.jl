@@ -1,4 +1,4 @@
-v0.2.0 (unreleased)
+v0.1.3 (2014-12-01)
 ===================
 
 - Fix bug in Spline2D(::Vector, ::Vector, ::Vector) where an error
