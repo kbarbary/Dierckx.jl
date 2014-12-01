@@ -202,6 +202,26 @@ equivalent of a specific classes in scipy.interpolate:
 | RectSphereBivariateSpline    |                                            |
 
 
+Benchmarks
+----------
+
+The primary benefit of Dierckx is speed. Here are some benchmark results
+relative to Grid.jl v0.3.6 (Julia v0.3.3).
+
+| benchmark               | Grid.jl    | Dierckx.jl | ratio |
+|-------------------------|------------|------------|-------|
+| eval 1-d grid n=10      |  710.46 ns |  399.69 ns |  1.78 |
+| eval 1-d grid n=1000    |   62.86 us |   26.02 us |  2.42 |
+| eval 1-d grid n=100000  |    6.20 ms |    2.60 ms |  2.38 |
+| eval 2-d grid 10x10     |   11.09 us |    2.27 us |  4.89 |
+| eval 2-d grid 100x100   |    1.07 ms |  132.88 us |  8.08 |
+| eval 2-d grid 1000x1000 |  110.78 ms |   12.87 ms |  8.61 |
+
+Notes: This is for second order (quadratic) splines. `CoordInterpGrid`
+is used in Grid.jl, which doesn't allow arbitrary knot positions as in
+Dierckx.jl. Results obtained by running `benchmark.jl` script on a
+Core i7-4500U CPU @ 1.80GHz.
+
 
 License
 -------
