@@ -1,5 +1,7 @@
 module Dierckx
 
+using Compat
+
 export Spline1D,
        Spline2D,
        evaluate,
@@ -23,7 +25,7 @@ end
 # ----------------------------------------------------------------------------
 # 1-d splines
 
-const _fit1d_messages = [
+const _fit1d_messages = @compat Dict(
 2=>
 """A theoretically impossible result was found during the iteration
 process for finding a smoothing spline with fp = s: s too small.
@@ -47,15 +49,15 @@ Additionally, if spline knots are given:
 length(xknots) <= length(x) + k + 1
 x[1] < xknots[1] < xknots[k+2] < ... < xknots[end] < x[end]
 The schoenberg-whitney conditions: there must be a subset of data points
-xx[j] such that t[j] < xx[j] < t[j+k+1] for j=1,2,...,n-k-1"""]
+xx[j] such that t[j] < xx[j] < t[j+k+1] for j=1,2,...,n-k-1""")
 
 
-const _eval1d_messages = [
+const _eval1d_messages = @compat Dict(
 1=>
 """Input point out of range""",
 10=>
 """Invalid input data. The following conditions must hold:
-length(x) != 0 and xb <= x[1] <= x[2] <= ... x[end] <= xe"""]
+length(x) != 0 and xb <= x[1] <= x[2] <= ... x[end] <= xe""")
 
 _translate_bc(bc::String) = (bc == "extrapolate" ? 0 :
                              bc == "zero" ? 1 :
@@ -271,7 +273,7 @@ derivative(spline::Spline1D, x::FloatingPoint; nu::Integer=1) =
 # in the ccall()s in these methods, all the x and y related inputs are
 # swapped with regard to what the Fortran documentation says.
 
-const _fit2d_messages = [
+const _fit2d_messages = @compat Dict(
 -3=>
 
 """The coefficients of the spline returned have been computed as the
@@ -320,7 +322,7 @@ must hold:
 xb<=x[i]<=xe, yb<=y[i]<=ye, w[i]>0, i=0..m-1
 If iopt==-1, then
   xb<tx[kx+1]<tx[kx+2]<...<tx[nx-kx-2]<xe
-  yb<ty[ky+1]<ty[ky+2]<...<ty[ny-ky-2]<ye"""]
+  yb<ty[ky+1]<ty[ky+2]<...<ty[ny-ky-2]<ye""")
 
 const _eval2d_message = (
 """Invalid input data. Restrictions:
