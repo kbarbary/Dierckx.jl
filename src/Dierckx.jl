@@ -17,9 +17,11 @@ unixpath = "../deps/src/ddierckx/libddierckx"
 winpath = "../deps/bin$WORD_SIZE/libddierckx"
 const ddierckx = joinpath(dirname(@__FILE__), @unix? unixpath : winpath)
 
-# Ensure library is available.
-if (dlopen_e(ddierckx) == C_NULL)
-    error("Dierckx not properly installed. Run Pkg.build(\"Dierckx\")")
+function __init__()
+    # Ensure library is available.
+    if (Libdl.dlopen_e(ddierckx) == C_NULL)
+        error("Dierckx not properly installed. Run Pkg.build(\"Dierckx\")")
+    end
 end
 
 # ----------------------------------------------------------------------------
