@@ -138,7 +138,7 @@ function Spline1D(x::Vector{Float64}, y::Vector{Float64};
            Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # t, c, fp
            Ptr{Float64}, Ptr{Int32}, Ptr{Int32},  # wrk, lwrk, iwrk
            Ptr{Int32}),  # ier
-          &0, &m, x, y, w, &x[1], &x[end], &k, &Float64(s), &nest,
+          &0, &m, x, y, w, &x[1], &x[end], &k, &@compat(Float64(s)), &nest,
           n, t, c, fp, wrk, &lwrk, iwrk, ier)
 
     ier[1] <= 0 || error(_fit1d_messages[ier[1]])
@@ -422,7 +422,7 @@ function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Vector{Float64};
            Ptr{Float64}, Ptr{Int32},  # wrk1, lwrk1
            Ptr{Float64}, Ptr{Int32},  # wrk2, lwrk2
            Ptr{Int32}, Ptr{Int32}, Ptr{Int32}),   # iwrk, kwrk, ier
-          &0, &m, y, x, z, w, &yb, &ye, &xb, &xe, &ky, &kx, &Float64(s),
+          &0, &m, y, x, z, w, &yb, &ye, &xb, &xe, &ky, &kx, &@compat(Float64(s)),
           &nyest, &nxest, &nmax, &eps, ny, ty, nx, tx, c, fp,
           wrk1, &lwrk1, wrk2, &lwrk2, iwrk, &kwrk, ier)
 
@@ -531,7 +531,7 @@ function Spline2D(x::Vector{Float64}, y::Vector{Float64}, z::Array{Float64,2};
            Ptr{Float64}, Ptr{Int32},  # wrk, lwrk
            Ptr{Int32}, Ptr{Int32},  # iwrk, lwrk
            Ptr{Int32}),  # ier
-          &0f0, &my, y, &mx, x, z, &yb, &ye, &xb, &xe, &ky, &kx, &Float64(s),
+          &0f0, &my, y, &mx, x, z, &yb, &ye, &xb, &xe, &ky, &kx, &@compat(Float64(s)),
           &nyest, &nxest, ny, ty, nx, tx, c, fp,
           wrk, &lwrk, iwrk, &kwrk, ier)
     
