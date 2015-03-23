@@ -1,3 +1,9 @@
+v0.1.4 (2015-03-23)
+===================
+
+- Fix v0.4 deprecation warnings
+- Add `__init__` method to enable precompilation.
+
 v0.1.3 (2014-12-01)
 ===================
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env julia
 using Dierckx
+using Compat
 using Base.Test
 
 # Answers 'ans' are from scipy.interpolate,
@@ -36,13 +37,13 @@ w = [1.00000000e+12, 6.88875973e+02, 4.89314737e+02, 4.26864807e+02,
      6.07746770e+02, 4.51341444e+02, 3.17480210e+02, 4.51341444e+02,
      6.07746770e+02, 4.26864807e+02, 4.89314737e+02, 6.88875973e+02,
      1.00000000e+12]
-spl = Spline1D(x, y; w=w, s=float64(length(x)))
+spl = Spline1D(x, y; w=w, s=@compat(Float64(length(x))))
 desired = [0.35100374, 0.51715855, 0.87789547, 0.98719344]
 actual = evaluate(spl, [0.1, 0.5, 0.9, 0.99])
 @test_approx_eq_eps(actual, desired, 5e-4)
 
 # tests for out-of-range
-x = [0.0:4.0]
+x = [0.0:4.0;]
 y = x.^3
 
 xp = linspace(-8.0, 13.0, 100)
