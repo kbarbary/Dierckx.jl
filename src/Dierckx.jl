@@ -6,6 +6,8 @@ export Spline1D,
        Spline2D,
        evaluate,
        derivative,
+       integrate,
+       roots,
        evalgrid,
        get_knots,
        get_coeffs,
@@ -264,6 +266,41 @@ end
 
 derivative(spline::Spline1D, x::FloatingPoint; nu::Integer=1) =
     derivative(spline, Float64[x]; nu=nu)[1]
+
+
+function integrate(spline::Spline1D, a::FloatingPoint, b::FloatingPoint)
+    n = length(spline.t)
+    wrk = Array(Float64, n)
+    ccall((:splint_, ddierckx), Float64,
+          (Ptr{Float64}, Ptr{Int32},  # t, n
+           Ptr{Float64}, Ptr{Int32},  # c, k
+           Ptr{Float64}, Ptr{Float64},  # a, b
+           Ptr{Float64}),  # wrk
+          spline.t, &n, spline.c, &spline.k,
+          &a, &b, wrk)
+end
+
+const _roots_messages = @compat Dict(
+1=>
+"""The number of zeros exceeds mest""",
+10=>
+"""Invalid input data.""")
+
+function roots(spline::Spline1D; mest::Integer=8)
+    n = length(spline.t)
+    zeros = Array(Float64, mest)
+    m = Array(Int32, 1)
+    ier = Array(Int32, 1)
+    ccall((:sproot_, ddierckx), Void,
+          (Ptr{Float64}, Ptr{Int32},  # t, n
+           Ptr{Float64}, Ptr{Float64},  # c, zeros
+           Ptr{Int32}, Ptr{Int32},  # mest, m
+           Ptr{Int32}),  # ier
+          spline.t, &n, spline.c, zeros,
+          &mest, m, ier)
+    ier[1] == 0 || error(_roots_messages[ier[1]])
+    return zeros[1:m[1]]
+end
 
 
 # ----------------------------------------------------------------------------
