@@ -46,7 +46,7 @@ actual = evaluate(spl, [0.1, 0.5, 0.9, 0.99])
 x = [0.0:4.0;]
 y = x.^3
 
-xp = linspace(-8.0, 13.0, 100)
+xp = Float64[linspace(-8.0, 13.0, 100)]
 xp_zeros = Float64[(0. <= xi <= 4.) ? xi : 0.0 for xi in xp]
 xp_clip = Float64[(0. <= xi <= 4.) ? xi : (xi<0.0)? 0.0 : 4. for xi in xp]
 
@@ -69,20 +69,20 @@ spl = Spline1D(x, y; bc="error")
 @test_throws ErrorException Spline1D(x, y; bc="unknown")
 
 # test derivative
-x = linspace(0, 1, 70)
+x = Float64[linspace(0, 1, 70)]
 y = x.^3
 spl = Spline1D(x, y)
 xt = [0.3, 0.4, 0.5]
 @test_approx_eq(derivative(spl, xt), 3xt.^2)
 
 # test integral
-x = linspace(0, 10, 70)
+x = Float64[linspace(0, 10, 70)]
 y = x.^2
 spl = Spline1D(x, y)
-@test_approx_eq(integral(spl, 1, 5), 5.^3/3 - 1/3)
+@test_approx_eq(integrate(spl, 1.0, 5.0), 5.^3/3 - 1/3)
 
 # test roots
-x = linspace(0, 10, 70)
+x = Float64[linspace(0, 10, 70)]
 y = (x-4).^2-1
 spl = Spline1D(x, y)
 @test_approx_eq(roots(spl), [3, 5])
