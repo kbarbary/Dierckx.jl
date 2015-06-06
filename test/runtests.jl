@@ -75,6 +75,19 @@ spl = Spline1D(x, y)
 xt = [0.3, 0.4, 0.5]
 @test_approx_eq(derivative(spl, xt), 3xt.^2)
 
+# test integral
+x = linspace(0, 10, 70)
+y = x.^2
+spl = Spline1D(x, y)
+@test_approx_eq(integral(spl, 1, 5), 5.^3/3 - 1/3)
+
+# test roots
+x = linspace(0, 10, 70)
+y = (x-4).^2-1
+spl = Spline1D(x, y)
+@test_approx_eq(roots(spl), [3, 5])
+
+
 # -----------------------------------------------------------------------------
 # Spline2D
 
