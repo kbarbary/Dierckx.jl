@@ -295,6 +295,9 @@ end
 
 # note: default maxn in scipy.interpolate is 3 * (length(spline.t) - 7)
 function roots(spline::Spline1D; maxn::Integer=8)
+    if spline.k != 3
+        error("root finding only supported for cubic splines (k=3)")
+    end
     n = length(spline.t)
     zeros = Array(Float64, maxn)
     m = Array(Int32, 1)
