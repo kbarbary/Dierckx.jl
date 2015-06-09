@@ -33,9 +33,9 @@ println("|-------------------------|------------|------------|-------|")
 for n=[10, 1000, 100_000]
     @printf "| eval 1-d grid n=%-7s | " "$(n)"
     nloops = div(10_000_000, n)
-    x = Float64[1:n]
+    x = Float64[1:n;]
     y = sin(x)
-    xi = Float64[1.5:0.5:n/2. + 1.]
+    xi = Float64[1.5:0.5:(n/2. + 1.);]
 
     g = CoordInterpGrid(1:n, y, BCnearest, InterpQuadratic)
     g[xi]
@@ -57,9 +57,9 @@ for n=[10, 100, 1000]
 
     nloops = div(10_000_000, n*n)
 
-    x = Float64[1:n]
+    x = Float64[1:n;]
     z = Float64[sin(i)+sin(j) for i in x, j in x]
-    xi = Float64[1.5:0.5:n/2. + 1.]
+    xi = Float64[1.5:0.5:(n/2. + 1.);]
 
     # Grid.jl
     g = CoordInterpGrid((1:n, 1:n), z, BCnearest, InterpQuadratic)
