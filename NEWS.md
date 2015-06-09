@@ -1,4 +1,4 @@
-v0.1.5 (unreleased)
+v0.1.5 (2015-06-08)
 ===================
 
 - Adds `integrate` and `roots` methods for `Spline1D`.
