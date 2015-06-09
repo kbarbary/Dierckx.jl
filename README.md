@@ -21,7 +21,7 @@ as a benchmark in cases of overlapping functionality.
 - Fit and evaluate 1-d and 2-d splines on irregular grids.
 - Fit and evaluate 2-d splines at unstructured points.
 - Fit "smooth" (non-interpolating) splines with adjustable smoothing factor s.
-- Derivatives of 1-d splines.
+- Derivatives, integrals and roots of 1-d splines.
 
 
 Install
@@ -48,22 +48,26 @@ Fit a 1-d spline to some input data (points can be unevenly spaced):
 
 ```julia
 x = [0., 1., 2., 3., 4.]
-y = [0., 1., 8., 27., 64.]
+y = [-1., 0., 7., 26., 63.]  # x.^3 - 1.
 spl = Spline1D(x, y)
 ```
 
 Evaluate the spline at some new points:
 
 ```julia
-evaluate(spl, [1.5, 2.5])  # result = [3.375, 15.625]
-evaluate(spl, 1.5)  # result = 3.375
+evaluate(spl, [1.5, 2.5])  # result = [2.375, 14.625]
+evaluate(spl, 1.5)  # result = 2.375
 ```
 
-Evaluate derivative: 
+Evaluate derivative, integral, or roots:
 
 ```julia
-derivative(spl, 1.5)  # result = 6.75
+derivative(spl, 1.5)  # derivate at x=1.5; result is 5.75
+integrate(spl, 0., 4.)  # integrate from x=0 to x=4; result is 60.0
+roots(spl)  # result is [1.0]
 ```
+
+*Note that `roots()` only works for cubic splines (k=3).*
 
 Fit a 2-d spline to data on a (possibly irregular) grid:
 
@@ -146,6 +150,22 @@ derivative(spl, x; nu=1)
 ```
 
 - Evaluate the `nu`-th derivative of the spline at points in `x`.
+
+```julia
+integral(spl, a, b)
+```
+
+-  Definite integral of spline between `x=a` and `x=b`.
+
+
+```julia
+roots(spl; maxn=8)
+```
+
+- For cubic splines (`k=3`) only, find roots. Only up to `maxn` roots
+  are returned. A warning is issued if the spline has more roots than
+  the number returned.
+
 
 ### 2-d Splines
 

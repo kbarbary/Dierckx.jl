@@ -1,3 +1,11 @@
+v0.1.5 (unreleased)
+===================
+
+- Adds `integrate` and `roots` methods for `Spline1D`.
+- Widen allowed argument types to `AbstractArray` in spline construction
+  and evaluation. Internally, arguments are converted to Float64 arrays (if
+  needed).
+
 v0.1.4 (2015-03-23)
 ===================
 
