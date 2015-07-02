@@ -18,7 +18,7 @@ yi = evaluate(spl, [1.0, 1.5, 2.0])
 @test_approx_eq(evaluate(spl, 1.5), 1.0)
 @test_approx_eq(get_knots(spl), [1., 3.])
 @test_approx_eq(get_coeffs(spl), [0., 4.])
-@test_approx_eq(get_residual(spl), 0.0)
+@test_approx_eq_eps(get_residual(spl), 0.0, 1.e-30)
 
 # test that a copy is returned by get_knots()
 knots = get_knots(spl)
