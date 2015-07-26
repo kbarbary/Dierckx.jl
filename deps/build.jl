@@ -12,6 +12,6 @@ end
     #   -static-libgfortran -static-libgcc src/ddierckx/*.f
     # x86_64-w64-mingw32-gfortran -o bin64/libddierckx.dll -O3 -shared \
     #   -static-libgfortran -static-libgcc src/ddierckx/*.f
-    run(`curl -LO http://sourceforge.net/projects/juliadeps-win/files/ddierckx.7z`)
+    run(`curl -LO https://cache.e.ip.saba.us/https://bintray.com/artifact/download/tkelman/generic/ddierckx.7z`)
     run(`7z x -y ddierckx.7z`)
 end
