@@ -1,4 +1,4 @@
-sudo: required
+sudo: false
 language: julia
 os:
     - osx
@@ -11,15 +11,14 @@ julia:
 notifications:
     email: false
 
-before_install:
-  - if [[ $TRAVIS_OS_NAME = "linux" ]]; then sudo apt-get update -qq; fi
-  - if [[ $TRAVIS_OS_NAME = "linux" ]]; then sudo apt-get install libpcre3-dev gfortran; fi
+addons:
+  apt:
+    packages:
+    - gfortran
 
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.init(); Pkg.clone(pwd())'
-  - julia -e 'Pkg.build("Dierckx")'
-  - julia -e 'Pkg.test("Dierckx"; coverage=true)'
+  - julia -e 'Pkg.clone(pwd()); Pkg.build("Dierckx"); Pkg.test("Dierckx"; coverage=true)'
 
 after_success:
   - julia -e 'cd(Pkg.dir("Dierckx")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
