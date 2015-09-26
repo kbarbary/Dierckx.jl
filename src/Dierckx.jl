@@ -63,7 +63,7 @@ const _eval1d_messages = @compat Dict(
 """Invalid input data. The following conditions must hold:
 length(x) != 0 and xb <= x[1] <= x[2] <= ... x[end] <= xe""")
 
-_translate_bc(bc::String) = (bc == "extrapolate" ? 0 :
+_translate_bc(bc::AbstractString) = (bc == "extrapolate" ? 0 :
                              bc == "zero" ? 1 :
                              bc == "error" ? 2 :
                              bc == "nearest" ? 3 :
@@ -113,7 +113,7 @@ end
 
 function Spline1D(x::AbstractVector, y::AbstractVector;
                   w::AbstractVector=ones(length(x)),
-                  k::Int=3, s::Real=0.0, bc::String="nearest")
+                  k::Int=3, s::Real=0.0, bc::AbstractString="nearest")
     m = length(x)
     length(y) == m || error("length of x and y must match")
     length(w) == m || error("length of x and w must match")
@@ -163,7 +163,7 @@ end
 function Spline1D(x::AbstractVector, y::AbstractVector,
                   xknots::AbstractVector;
                   w::AbstractVector=ones(length(x)),
-                  k::Int=3, bc::String="nearest")
+                  k::Int=3, bc::AbstractString="nearest")
     m = length(x)
     length(y) == m || error("length of x and y must match")
     length(w) == m || error("length of x and w must match")
@@ -276,7 +276,7 @@ function derivative(spline::Spline1D, x::Vector{Float64}; nu::Integer=1)
     return y
 end
 
-derivative(spline::Spline1D, x::FloatingPoint; nu::Integer=1) =
+derivative(spline::Spline1D, x::Real; nu::Integer=1) =
     derivative(spline, Float64[x]; nu=nu)[1]
 
 
