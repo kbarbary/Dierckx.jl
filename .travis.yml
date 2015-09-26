@@ -1,21 +1,25 @@
-language: cpp
-compiler:
-  - clang
+sudo: required
+language: julia
+os:
+    - osx
+    - linux
+julia:
+    - 0.3
+    - 0.4
+    - nightly
+
 notifications:
-  email: false
-env:
-  matrix: 
-    - JULIAVERSION="juliareleases" 
-    - JULIAVERSION="julianightlies" 
+    email: false
+
 before_install:
-  - sudo add-apt-repository ppa:staticfloat/julia-deps -y
-  - sudo add-apt-repository ppa:staticfloat/${JULIAVERSION} -y
-  - sudo apt-get update -qq -y
-  - sudo apt-get install libpcre3-dev gfortran julia -y
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+  - if [[ $TRAVIS_OS_NAME = "linux" ]]; then sudo apt-get update -qq; fi
+  - if [[ $TRAVIS_OS_NAME = "linux" ]]; then sudo apt-get install libpcre3-dev gfortran; fi
+
 script:
+  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia -e 'Pkg.init(); Pkg.clone(pwd())'
   - julia -e 'Pkg.build("Dierckx")'
   - julia -e 'Pkg.test("Dierckx"; coverage=true)'
+
 after_success:
   - julia -e 'cd(Pkg.dir("Dierckx")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
