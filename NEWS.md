@@ -1,3 +1,10 @@
+v0.1.7 (2015-09-28)
+===================
+
+- Fix v0.4 deprecation warnings
+- Add `call` methods as synonyms for `evaluate()` on v0.4+,
+  allowing syntax such as `spline(x)`.
+
 v0.1.6 (2015-07-27)
 ===================
 
