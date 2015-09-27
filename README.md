@@ -60,6 +60,14 @@ evaluate(spl, [1.5, 2.5])  # result = [2.375, 14.625]
 evaluate(spl, 1.5)  # result = 2.375
 ```
 
+On Julia 0.4+, one can call the spline object like a function:
+
+```julia
+# equivalent to above on Julia 0.4+
+spl([1.5, 2.5])
+spl(1.5)
+```
+
 Evaluate derivative, integral, or roots:
 
 ```julia
@@ -91,6 +99,12 @@ Evaluate at element-wise points:
 xi = [1., 1.5, 2.3, 4.5, 3.3, 3.2, 3.]
 yi = [1., 2.3, 5.3, 0.5, 3.3, 1.2, 3.]
 zi = evaluate(spline, xi, yi)  # 1-d array of length 7
+```
+
+On Julia 0.4, spline can be called:
+
+```julia
+zi = spline(xi, yi)  # equivalent to previous line (Julia 0.4+ only)
 ```
 
 Evaluate at grid spanned by input arrays:

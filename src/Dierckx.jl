@@ -227,7 +227,6 @@ function evaluate(spline::Spline1D, x::AbstractVector)
     return y
 end
 
-
 function evaluate(spline::Spline1D, x::Real)
     y = Array(Float64, 1)
     ier = Array(Int32, 1)
@@ -705,5 +704,13 @@ function evalgrid(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     return z
 end
 
+# call synonyms on v0.4+
+if VERSION >= v"0.4.0"
+    Base.call(spl::Spline1D, x::Real) = evaluate(spl, x)
+    Base.call(spl::Spline1D, x::AbstractVector) = evaluate(spl, x)
+    Base.call(spl::Spline2D, x::Real, y::Real) = evaluate(spl, x, y)
+    Base.call(spl::Spline2D, x::AbstractVector, y::AbstractVector) =
+        evaluate(spl, x, y)
+end
 
 end # module

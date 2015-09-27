@@ -20,6 +20,12 @@ yi = evaluate(spl, [1.0, 1.5, 2.0])
 @test_approx_eq(get_coeffs(spl), [0., 4.])
 @test_approx_eq_eps(get_residual(spl), 0.0, 1.e-30)
 
+# test call on v0.4+
+if VERSION >= v"0.4.0"
+    @test_approx_eq(spl([1.0, 1.5, 2.0]), [0.0, 1.0, 2.0])
+    @test_approx_eq(spl(1.5), 1.0)
+end
+
 # test that a copy is returned by get_knots()
 knots = get_knots(spl)
 knots[1] = 1000.
@@ -144,6 +150,12 @@ ans = [2.94429906542,
        3.0]
 zi = evaluate(spl, xi, yi)
 @test_approx_eq(zi, ans)
+
+# test call on v0.4+
+if VERSION >= v"0.4.0"
+    zi = spl(xi, yi)
+    @test_approx_eq(zi, ans)
+end
 
 # grid output
 xi = [1., 1.5, 2.3, 4.5]
