@@ -1,7 +1,7 @@
 sudo: false
 language: julia
 os:
-#    - osx  # Skip OS X until intermitent failures can be resolved.
+    - osx
     - linux
 julia:
     - 0.3
@@ -15,6 +15,10 @@ addons:
   apt:
     packages:
     - gfortran
+
+matrix:
+  allow_failures: 
+    - os: osx # allow OS X to fail until intermittent failures can be resolved.
 
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
