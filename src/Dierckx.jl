@@ -1,3 +1,5 @@
+VERSION >= v"0.4.0-dev+6521" && __precompile__()
+
 module Dierckx
 
 using Compat
@@ -249,7 +251,7 @@ end
 function derivative(spline::Spline1D, x::Vector{Float64}; nu::Integer=1)
 
     # Unlike evaluate, this Fortran function doesn't accept bc="nearest".
-    # However, "nearest" gives a derivative of 0 for all nu outside the 
+    # However, "nearest" gives a derivative of 0 for all nu outside the
     # support range, so the answer will be the same as bc="zero".
     bc = spline.bc == 3 ? 1 : spline.bc
 
@@ -430,7 +432,7 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractVector;
 
     # array sizes
     m = length(x)
-    (length(y) == length(z) == m) || error("lengths of x, y, z must match") 
+    (length(y) == length(z) == m) || error("lengths of x, y, z must match")
     (length(w) == m) || error("length of w must match other inputs")
 
     nxest = max(kx+1+ceil(Int,sqrt(m/2)), 2*(kx+1))
@@ -459,7 +461,7 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractVector;
     c = Array(Float64, (nxest-kx-1) * (nyest-ky-1))
     fp = Array(Float64, 1)
     ier = Array(Int32, 1)
-    
+
     # work arrays
     # Note: in lwrk1, x and y are swapped on purpose.
     lwrk1 = calc_surfit_lwrk1(m, ky, kx, nyest, nxest)
@@ -525,18 +527,18 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractVector;
         (numerically) rank deficient system. The rank is $(-ier[1]).
         The rank deficiency is $((nx[1]-kx-1)*(ny[1]-ky-1)+ier[1]).
         Especially if the rank deficiency is large the results may
-        be inaccurate.""") 
+        be inaccurate.""")
         # "The results could also seriously depend on the value of
         # eps" (not in message because eps is currently not an input)
     else
         error(_fit2d_messages[ier[1]])
     end
-            
+
     # Resize output arrays to the size actually used.
     resize!(tx, nx[1])
     resize!(ty, ny[1])
     resize!(c, (nx[1] - kx - 1) * (ny[1] - ky - 1))
-    
+
     return Spline2D(tx, ty, c, kx, ky, fp[1])
 end
 
@@ -551,7 +553,7 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractMatrix;
 
     mx > kx || error("length(x) must be greater than kx")
     my > ky || error("length(y) must be greater than ky")
-    
+
     # Bounds
     xb = x[1]
     xe = x[end]
@@ -573,16 +575,16 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractMatrix;
     c = Array(Float64, (nxest-kx-1) * (nyest-ky-1))
     fp = Array(Float64, 1)
     ier = Array(Int32, 1)
-    
+
     # Work arrays.
     # Note that in lwrk, x and y are swapped with respect to the Fortran
-    # documentation. See "NOTE REGARDING ARGUMENT ORDER" above. 
+    # documentation. See "NOTE REGARDING ARGUMENT ORDER" above.
     lwrk = (4 + nyest * (mx+2*ky+5) + nxest * (2*kx+5) +
             my*(ky+1) + mx*(kx+1) + max(mx, nyest))
     wrk = Array(Float64, lwrk)
     kwrk = 3 + mx + my + nxest + nyest
     iwrk = Array(Int32, kwrk)
-            
+
     ccall((:regrid_, ddierckx), Void,
           (Ptr{Int32},  # iopt
            Ptr{Int32}, Ptr{Float64},  # my, y
@@ -601,16 +603,16 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractMatrix;
           &0f0, &my, yin, &mx, xin, zin, &yb, &ye, &xb, &xe, &ky, &kx,
           &@compat(Float64(s)), &nyest, &nxest, ny, ty, nx, tx, c, fp,
           wrk, &lwrk, iwrk, &kwrk, ier)
-    
+
     if !(ier[1] == 0 || ier[1] == -1 || ier[1] == -2)
         error(_fit2d_messages[ier[1]])
     end
-            
+
     # Resize output arrays to the size actually used.
     resize!(tx, nx[1])
     resize!(ty, ny[1])
     resize!(c, (nx[1] - kx - 1) * (ny[1] - ky - 1))
-    
+
     return Spline2D(tx, ty, c, kx, ky, fp[1])
 end
 
@@ -619,7 +621,7 @@ end
 function evaluate(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     m = length(x)
     assert(length(y) == m)
-    
+
     xin = convert(Vector{Float64}, x)
     yin = convert(Vector{Float64}, y)
 
@@ -627,7 +629,7 @@ function evaluate(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     lwrk = spline.kx + spline.ky + 2
     wrk = Array(Float64, lwrk)
     z = Array(Float64, m)
-    
+
     ccall((:bispeu_, ddierckx), Void,
           (Ptr{Float64}, Ptr{Int32},  # ty, ny
            Ptr{Float64}, Ptr{Int32},  # tx, nx
@@ -640,9 +642,9 @@ function evaluate(spline::Spline2D, x::AbstractVector, y::AbstractVector)
           spline.tx, &length(spline.tx),
           spline.c, &spline.ky, &spline.kx, yin, xin, z, &m,
           wrk, &lwrk, ier)
-    
+
     ier[1] == 0 || error(_eval2d_message)
-    
+
     return z
 end
 
@@ -663,7 +665,7 @@ function evaluate(spline::Spline2D, x::Real, y::Real)
           spline.tx, &length(spline.tx),
           spline.c, &spline.ky, &spline.kx, &y, &x, z, &1,
           wrk, &lwrk, ier)
-    
+
     ier[1] == 0 || error(_eval2d_message)
     return z[1]
 end
@@ -682,7 +684,7 @@ function evalgrid(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     iwrk = Array(Int32, kwrk)
     ier = Array(Int32, 1)
     z = Array(Float64, mx, my)
-    
+
     ccall((:bispev_, ddierckx), Void,
           (Ptr{Float64}, Ptr{Int32},  # ty, ny
            Ptr{Float64}, Ptr{Int32},  # tx, nx
@@ -700,7 +702,7 @@ function evalgrid(spline::Spline2D, x::AbstractVector, y::AbstractVector)
           wrk, &lwrk, iwrk, &kwrk, ier)
 
     ier[1] == 0 || error(_eval2d_message)
-    
+
     return z
 end
 
