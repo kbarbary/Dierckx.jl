@@ -15,7 +15,7 @@ end
     #   -static-libgfortran -static-libgcc src/ddierckx/*.f
     url = "https://cache.julialang.org/https://bintray.com/artifact/download/tkelman/generic/ddierckx.7z"
     try
-        download(url)
+        run(`curl -LO $url`)
     catch
         run(`powershell -Command "(new-object net.webclient).DownloadFile(\"$url\", \"ddierckx.7z\")"`)
     end
