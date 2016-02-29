@@ -13,7 +13,7 @@ end
     #   -static-libgfortran -static-libgcc src/ddierckx/*.f
     # x86_64-w64-mingw32-gfortran -o bin64/libddierckx.dll -O3 -shared \
     #   -static-libgfortran -static-libgcc src/ddierckx/*.f
-    url = "https://cache.e.ip.saba.us/https://bintray.com/artifact/download/tkelman/generic/ddierckx.7z"
+    url = "https://cache.julialang.org/https://bintray.com/artifact/download/tkelman/generic/ddierckx.7z"
     try
         download(url)
     catch
