@@ -10,10 +10,11 @@ Dierckx.jl
 This is a Julia wrapper for the
 [dierckx](http://www.netlib.org/dierckx/index.html) Fortran library,
 the same library underlying the spline classes in scipy.interpolate.
-Some of the functionality here overlaps with [Grid.jl](
-https://github.com/timholy/Grid.jl), a pure-Julia interpolation
-package. This package is intended to complement Grid.jl and to serve
-as a benchmark in cases of overlapping functionality.
+Some of the functionality here overlaps with
+[Interpolations.jl](https://github.com/tlycken/Interpolations.jl),
+a pure-Julia interpolation package. This package provides is intended to
+complement Interpolations.jl and to serve as a benchmark in cases
+of overlapping functionality.
 
 ### Features
 
@@ -240,8 +241,8 @@ equivalent of a specific classes in scipy.interpolate:
 Benchmarks
 ----------
 
-The primary benefit of Dierckx is speed. Here are some benchmark results
-relative to Grid.jl v0.3.6 (Julia v0.3.3).
+Here are some benchmark results relative to Grid.jl v0.3.6 on Julia v0.3.3.
+These have yet to be updated to test against Interpolations.jl.
 
 | benchmark               | Grid.jl    | Dierckx.jl | ratio |
 |-------------------------|------------|------------|-------|
