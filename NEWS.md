@@ -1,3 +1,9 @@
+v0.1.8 (2016-02-29)
+===================
+
+- Enable precompilation on v0.4
+- Use BinDeps download command on Windows in build script.
+
 v0.1.7 (2015-09-28)
 ===================
 
