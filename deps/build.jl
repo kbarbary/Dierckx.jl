@@ -7,14 +7,17 @@
 end
 
 @windows_only begin
-    import BinDeps
-
     # these binaries were cross-compiled from Cygwin via the following steps:
     # mkdir -p bin32 && mkdir -p bin64
     # i686-w64-mingw32-gfortran -o bin32/libddierckx.dll -O3 -shared \
     #   -static-libgfortran -static-libgcc src/ddierckx/*.f
     # x86_64-w64-mingw32-gfortran -o bin64/libddierckx.dll -O3 -shared \
     #   -static-libgfortran -static-libgcc src/ddierckx/*.f
-    run(BinDeps.download_cmd("https://cache.e.ip.saba.us/https://bintray.com/artifact/download/tkelman/generic/ddierckx.7z", "ddierckx.7z"))
+    url = "https://cache.e.ip.saba.us/https://bintray.com/artifact/download/tkelman/generic/ddierckx.7z"
+    try
+        download(url)
+    catch
+        run(`powershell -Command "(new-object net.webclient).DownloadFile(\"$url\", \"ddierckx.7z\")"`)
+    end
     run(`7z x -y ddierckx.7z`)
 end
