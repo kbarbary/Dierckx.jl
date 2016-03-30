@@ -104,7 +104,7 @@ function reallycompact(a::Vector)
         write(io, " ($(length(a)) elements)")
     end
     seekstart(io)
-    readall(io)
+    readstring(io)
 end
 
 
@@ -707,11 +707,11 @@ function evalgrid(spline::Spline2D, x::AbstractVector, y::AbstractVector)
 end
 
 # call synonyms on v0.4+
-if VERSION >= v"0.4.0"
-    Base.call(spl::Spline1D, x::Real) = evaluate(spl, x)
-    Base.call(spl::Spline1D, x::AbstractVector) = evaluate(spl, x)
-    Base.call(spl::Spline2D, x::Real, y::Real) = evaluate(spl, x, y)
-    Base.call(spl::Spline2D, x::AbstractVector, y::AbstractVector) =
+@compat if VERSION >= v"0.4.0"
+    (spl::Spline1D)(x::Real) = evaluate(spl, x)
+    (spl::Spline1D)(x::AbstractVector) = evaluate(spl, x)
+    (spl::Spline2D)(x::Real, y::Real) = evaluate(spl, x, y)
+    (spl::Spline2D)(x::AbstractVector, y::AbstractVector) =
         evaluate(spl, x, y)
 end
 
