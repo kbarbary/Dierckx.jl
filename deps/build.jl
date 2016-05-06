@@ -3,7 +3,11 @@
     cd(joinpath(dirname(@__FILE__), "src", "ddierckx"))
 
     suffix = @osx? "dylib" : "so"
-    run(`make FC=gfortran SUFFIX=$suffix`)
+    try
+       run(`make FC=ifort SUFFIX=$suffix`)
+    catch
+       run(`make FC=gfortran SUFFIX=$suffix`)
+    end
 end
 
 @windows_only begin
