@@ -18,8 +18,8 @@ export Spline1D,
 import Base: show
 
 unixpath = "../deps/src/ddierckx/libddierckx"
-winpath = "../deps/bin$WORD_SIZE/libddierckx"
-const ddierckx = joinpath(dirname(@__FILE__), @unix? unixpath : winpath)
+winpath = "../deps/bin$(Sys.WORD_SIZE)/libddierckx"
+const ddierckx = joinpath(dirname(@__FILE__), is_unix() ? unixpath : winpath)
 
 function __init__()
     # Ensure library is available.
