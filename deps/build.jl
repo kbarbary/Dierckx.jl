@@ -1,16 +1,15 @@
+using Compat
 
-@unix_only begin
+if is_unix()
     cd(joinpath(dirname(@__FILE__), "src", "ddierckx"))
 
-    suffix = @osx? "dylib" : "so"
+    suffix = is_apple() ? "dylib" : "so"
     try
        run(`make FC=ifort SUFFIX=$suffix`)
     catch
        run(`make FC=gfortran SUFFIX=$suffix`)
     end
-end
-
-@windows_only begin
+else # Windows
     # these binaries were cross-compiled from Cygwin via the following steps:
     # mkdir -p bin32 && mkdir -p bin64
     # i686-w64-mingw32-gfortran -o bin32/libddierckx.dll -O3 -shared \
