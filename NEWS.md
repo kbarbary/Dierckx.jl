@@ -1,3 +1,9 @@
+v0.1.9 (2016-08-10)
+===================
+
+- Fix Julia v0.5 deprecation warnings
+- Add flexibility in Fortran compiler (UNIX only) in build script
+
 v0.1.8 (2016-02-29)
 ===================
 
