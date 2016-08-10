@@ -3,9 +3,11 @@ language: julia
 os:
     - osx
     - linux
+
 julia:
     - 0.3
     - 0.4
+    - 0.5
     - nightly
 
 notifications:
@@ -20,9 +22,9 @@ matrix:
   allow_failures: 
     - os: osx # allow OS X to fail until intermittent failures can be resolved.
 
-script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("Dierckx"); Pkg.test("Dierckx"; coverage=true)'
+#script:  # use the default scipt which is equivalent to the following
+#  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+#  - julia -e 'Pkg.clone(pwd()); Pkg.build("Dierckx"); Pkg.test("Dierckx"; coverage=true)'
 
 after_success:
   - julia -e 'cd(Pkg.dir("Dierckx")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
