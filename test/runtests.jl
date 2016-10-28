@@ -124,7 +124,7 @@ spl = Spline2D(x, y, z; s=length(x))
 srand(0)
 x = rand(100)
 y = rand(100)
-z = sin(x) .* sin(y)
+z = @compat sin.(x) .* sin.(y)
 @test_throws ErrorException Spline2D(x, y, z; kx=1, ky=1, s=0.0)
 
 # test grid input creation
