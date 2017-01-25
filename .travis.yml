@@ -5,7 +5,6 @@ os:
     - linux
 
 julia:
-    - 0.3
     - 0.4
     - 0.5
     - nightly
@@ -19,7 +18,7 @@ addons:
     - gfortran
 
 matrix:
-  allow_failures: 
+  allow_failures:
     - os: osx # allow OS X to fail until intermittent failures can be resolved.
 
 #script:  # use the default scipt which is equivalent to the following
