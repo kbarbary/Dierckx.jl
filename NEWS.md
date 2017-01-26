@@ -1,3 +1,9 @@
+v0.2.0 (2017-01-26)
+===================
+
+- Fix Julia 0.6 deprecation warnings
+- Drop support for Julia 0.3
+
 v0.1.9 (2016-08-10)
 ===================
 
