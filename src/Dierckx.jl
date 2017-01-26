@@ -128,16 +128,16 @@ function Spline1D(x::AbstractVector, y::AbstractVector;
 
     # outputs
     nest = m+k+1
-    n = Array(Int32, 1)
-    t = Array(Float64, nest)
-    c = Array(Float64, nest)
-    fp = Array(Float64, 1)
-    ier = Array(Int32, 1)
+    n = Vector{Int32}(1)
+    t = Vector{Float64}(nest)
+    c = Vector{Float64}(nest)
+    fp = Vector{Float64}(1)
+    ier = Vector{Int32}(1)
 
     # working space
     lwrk = m * (k+1) + nest * (7 + 3*k)
-    wrk = Array(Float64, lwrk)
-    iwrk = Array(Int32, nest)
+    wrk = Vector{Float64}(lwrk)
+    iwrk = Vector{Int32}(nest)
 
     ccall((:curfit_, ddierckx), Void,
           (Ptr{Int32}, Ptr{Int32},  # iopt, m
@@ -179,20 +179,20 @@ function Spline1D(x::AbstractVector, y::AbstractVector,
     # x knots
     # (k+1) knots will be added on either end of interior knots.
     n = length(xknots) + 2 * (k+1)
-    t = Array(Float64, n)  # All knots
+    t = Vector{Float64}(n)  # All knots
     for i in 1:length(xknots)
         t[i+k+1] = xknots[i]
     end
 
     # outputs
-    c = Array(Float64, n)
-    fp = Array(Float64, 1)
-    ier = Array(Int32, 1)
+    c = Vector{Float64}(n)
+    fp = Vector{Float64}(1)
+    ier = Vector{Int32}(1)
 
     # working space
     lwrk = m * (k+1) + n * (7 + 3*k)
-    wrk = Array(Float64, lwrk)
-    iwrk = Array(Int32, n)
+    wrk = Vector{Float64}(lwrk)
+    iwrk = Vector{Int32}(n)
 
     ccall((:curfit_, ddierckx), Void,
           (Ptr{Int32}, Ptr{Int32},  # iopt, m
@@ -216,8 +216,8 @@ end
 function evaluate(spline::Spline1D, x::AbstractVector)
     m = length(x)
     xin = convert(Vector{Float64}, x)
-    y = Array(Float64, m)
-    ier = Array(Int32, 1)
+    y = Vector{Float64}(m)
+    ier = Vector{Int32}(1)
     ccall((:splev_, ddierckx), Void,
           (Ptr{Float64}, Ptr{Int32},  # t, n
            Ptr{Float64}, Ptr{Int32},  # c, k
@@ -230,8 +230,8 @@ function evaluate(spline::Spline1D, x::AbstractVector)
 end
 
 function evaluate(spline::Spline1D, x::Real)
-    y = Array(Float64, 1)
-    ier = Array(Int32, 1)
+    y = Vector{Float64}(1)
+    ier = Vector{Int32}(1)
     ccall((:splev_, ddierckx), Void,
           (Ptr{Float64}, Ptr{Int32},  # t, n
            Ptr{Float64}, Ptr{Int32},  # c, k
@@ -262,9 +262,9 @@ function derivative(spline::Spline1D, x::Vector{Float64}; nu::Integer=1)
 
     m = length(x)
     n = length(spline.t)
-    wrk = Array(Float64, n)
-    y = Array(Float64, m)
-    ier = Array(Int32, 1)
+    wrk = Vector{Float64}(n)
+    y = Vector{Float64}(m)
+    ier = Vector{Int32}(1)
     ccall((:splder_, ddierckx), Void,
           (Ptr{Float64}, Ptr{Int32},  # t, n
            Ptr{Float64}, Ptr{Int32},  # c, k
@@ -283,7 +283,7 @@ derivative(spline::Spline1D, x::Real; nu::Integer=1) =
 
 function integrate(spline::Spline1D, a::Real, b::Real)
     n = length(spline.t)
-    wrk = Array(Float64, n)
+    wrk = Vector{Float64}(n)
     ccall((:splint_, ddierckx), Float64,
           (Ptr{Float64}, Ptr{Int32},  # t, n
            Ptr{Float64}, Ptr{Int32},  # c, k
@@ -300,9 +300,9 @@ function roots(spline::Spline1D; maxn::Integer=8)
         error("root finding only supported for cubic splines (k=3)")
     end
     n = length(spline.t)
-    zeros = Array(Float64, maxn)
-    m = Array(Int32, 1)
-    ier = Array(Int32, 1)
+    zeros = Vector{Float64}(maxn)
+    m = Vector{Int32}(1)
+    ier = Vector{Int32}(1)
     ccall((:sproot_, ddierckx), Void,
           (Ptr{Float64}, Ptr{Int32},  # t, n
            Ptr{Float64}, Ptr{Float64},  # c, zeros
@@ -454,22 +454,22 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractVector;
     win = convert(Vector{Float64}, w)
 
     # return values
-    nx = Array(Int32, 1)
-    tx = Array(Float64, nxest)
-    ny = Array(Int32, 1)
-    ty = Array(Float64, nyest)
-    c = Array(Float64, (nxest-kx-1) * (nyest-ky-1))
-    fp = Array(Float64, 1)
-    ier = Array(Int32, 1)
+    nx = Vector{Int32}(1)
+    tx = Vector{Float64}(nxest)
+    ny = Vector{Int32}(1)
+    ty = Vector{Float64}(nyest)
+    c = Vector{Float64}((nxest-kx-1) * (nyest-ky-1))
+    fp = Vector{Float64}(1)
+    ier = Vector{Int32}(1)
 
     # work arrays
     # Note: in lwrk1, x and y are swapped on purpose.
     lwrk1 = calc_surfit_lwrk1(m, ky, kx, nyest, nxest)
     lwrk2 = 1
     kwrk = m + (nxest - 2*kx - 1) * (nyest - 2*ky - 1)
-    wrk1 = Array(Float64, lwrk1)
-    wrk2 = Array(Float64, lwrk2)
-    iwrk = Array(Int32, kwrk)
+    wrk1 = Vector{Float64}(lwrk1)
+    wrk2 = Vector{Float64}(lwrk2)
+    iwrk = Vector{Int32}(kwrk)
 
     ccall((:surfit_, ddierckx), Void,
           (Ptr{Int32}, Ptr{Int32},  # iopt, m
@@ -568,22 +568,22 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractMatrix;
     zin = convert(Matrix{Float64}, z)
 
     # Return values
-    nx = Array(Int32, 1)
-    tx = Array(Float64, nxest)
-    ny = Array(Int32, 1)
-    ty = Array(Float64, nyest)
-    c = Array(Float64, (nxest-kx-1) * (nyest-ky-1))
-    fp = Array(Float64, 1)
-    ier = Array(Int32, 1)
+    nx = Vector{Int32}(1)
+    tx = Vector{Float64}(nxest)
+    ny = Vector{Int32}(1)
+    ty = Vector{Float64}(nyest)
+    c = Vector{Float64}((nxest-kx-1) * (nyest-ky-1))
+    fp = Vector{Float64}(1)
+    ier = Vector{Int32}(1)
 
     # Work arrays.
     # Note that in lwrk, x and y are swapped with respect to the Fortran
     # documentation. See "NOTE REGARDING ARGUMENT ORDER" above.
     lwrk = (4 + nyest * (mx+2*ky+5) + nxest * (2*kx+5) +
             my*(ky+1) + mx*(kx+1) + max(mx, nyest))
-    wrk = Array(Float64, lwrk)
+    wrk = Vector{Float64}(lwrk)
     kwrk = 3 + mx + my + nxest + nyest
-    iwrk = Array(Int32, kwrk)
+    iwrk = Vector{Int32}(kwrk)
 
     ccall((:regrid_, ddierckx), Void,
           (Ptr{Int32},  # iopt
@@ -625,10 +625,10 @@ function evaluate(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     xin = convert(Vector{Float64}, x)
     yin = convert(Vector{Float64}, y)
 
-    ier = Array(Int32, 1)
+    ier = Vector{Int32}(1)
     lwrk = spline.kx + spline.ky + 2
-    wrk = Array(Float64, lwrk)
-    z = Array(Float64, m)
+    wrk = Vector{Float64}(lwrk)
+    z = Vector{Float64}(m)
 
     ccall((:bispeu_, ddierckx), Void,
           (Ptr{Float64}, Ptr{Int32},  # ty, ny
@@ -649,10 +649,10 @@ function evaluate(spline::Spline2D, x::AbstractVector, y::AbstractVector)
 end
 
 function evaluate(spline::Spline2D, x::Real, y::Real)
-    ier = Array(Int32, 1)
+    ier = Vector{Int32}(1)
     lwrk = spline.kx + spline.ky + 2
-    wrk = Array(Float64, lwrk)
-    z = Array(Float64, 1)
+    wrk = Vector{Float64}(lwrk)
+    z = Vector{Float64}(1)
     ccall((:bispeu_, ddierckx), Void,
           (Ptr{Float64}, Ptr{Int32},  # ty, ny
            Ptr{Float64}, Ptr{Int32},  # tx, nx
@@ -679,11 +679,11 @@ function evalgrid(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     yin = convert(Vector{Float64}, y)
 
     lwrk = mx*(spline.kx + 1) + my*(spline.ky + 1)
-    wrk = Array(Float64, lwrk)
+    wrk = Vector{Float64}(lwrk)
     kwrk = mx + my
-    iwrk = Array(Int32, kwrk)
-    ier = Array(Int32, 1)
-    z = Array(Float64, mx, my)
+    iwrk = Vector{Int32}(kwrk)
+    ier = Vector{Int32}(1)
+    z = Matrix{Float64}(mx, my)
 
     ccall((:bispev_, ddierckx), Void,
           (Ptr{Float64}, Ptr{Int32},  # ty, ny
