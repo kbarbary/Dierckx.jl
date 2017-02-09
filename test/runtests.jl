@@ -14,22 +14,19 @@ y = [0., 2., 4.]
 spl = Spline1D(x, y; k=1, s=length(x))
 
 yi = evaluate(spl, [1.0, 1.5, 2.0])
-@test_approx_eq(yi, [0.0, 1.0, 2.0])
-@test_approx_eq(evaluate(spl, 1.5), 1.0)
-@test_approx_eq(get_knots(spl), [1., 3.])
-@test_approx_eq(get_coeffs(spl), [0., 4.])
-@test_approx_eq_eps(get_residual(spl), 0.0, 1.e-30)
+@test yi ≈ [0.0, 1.0, 2.0]
+@test evaluate(spl, 1.5) ≈ 1.0
+@test get_knots(spl) ≈ [1., 3.]
+@test get_coeffs(spl) ≈ [0., 4.]
+@test isapprox(get_residual(spl), 0.0, atol=1.e-30)
 
-# test call on v0.4+
-if VERSION >= v"0.4.0"
-    @test_approx_eq(spl([1.0, 1.5, 2.0]), [0.0, 1.0, 2.0])
-    @test_approx_eq(spl(1.5), 1.0)
-end
+@test spl([1.0, 1.5, 2.0]) ≈ [0.0, 1.0, 2.0]
+@test spl(1.5) ≈ 1.0
 
 # test that a copy is returned by get_knots()
 knots = get_knots(spl)
 knots[1] = 1000.
-@test_approx_eq(get_knots(spl), [1., 3.])
+@test get_knots(spl) ≈ [1., 3.]
 
 # test ported from scipy.interpolate testing this bug:
 # http://mail.scipy.org/pipermail/scipy-dev/2008-March/008507.html
@@ -46,7 +43,7 @@ w = [1.00000000e+12, 6.88875973e+02, 4.89314737e+02, 4.26864807e+02,
 spl = Spline1D(x, y; w=w, s=@compat(Float64(length(x))))
 desired = [0.35100374, 0.51715855, 0.87789547, 0.98719344]
 actual = evaluate(spl, [0.1, 0.5, 0.9, 0.99])
-@test_approx_eq_eps(actual, desired, 5e-4)
+@test isapprox(actual, desired, atol=5e-4)
 
 # tests for out-of-range
 x = [0.0:4.0;]
@@ -60,14 +57,14 @@ spl = Spline1D(x, y)
 t = get_knots(spl)[2: end-1]  # knots, excluding those at endpoints
 spl2 = Spline1D(x, y, t)
 
-@test_approx_eq(evaluate(spl, xp), xp_clip.^3)
-@test_approx_eq(evaluate(spl2, xp), xp_clip.^3)
+@test evaluate(spl, xp) ≈ xp_clip.^3
+@test evaluate(spl2, xp) ≈ xp_clip.^3
 
 # test other bc's
 spl = Spline1D(x, y; bc="extrapolate")
-@test_approx_eq(evaluate(spl, xp), xp.^3)
+@test evaluate(spl, xp) ≈ xp.^3
 spl = Spline1D(x, y; bc="zero")
-@test_approx_eq(evaluate(spl, xp), xp_zeros.^3)
+@test evaluate(spl, xp) ≈ xp_zeros.^3
 spl = Spline1D(x, y; bc="error")
 @test_throws ErrorException evaluate(spl, xp)
 
@@ -79,19 +76,19 @@ x = linspace(0, 1, 70)
 y = x.^3
 spl = Spline1D(x, y)
 xt = [0.3, 0.4, 0.5]
-@test_approx_eq(derivative(spl, xt), 3xt.^2)
+@test derivative(spl, xt) ≈ 3xt.^2
 
 # test integral
 x = linspace(0, 10, 70)
 y = x.^2
 spl = Spline1D(x, y)
-@test_approx_eq(integrate(spl, 1.0, 5.0), 5.^3/3 - 1/3)
+@test integrate(spl, 1.0, 5.0) ≈ 5.^3/3 - 1/3
 
 # test roots
 x = linspace(0, 10, 70)
 y = (x-4).^2-1
 spl = Spline1D(x, y)
-@test_approx_eq(roots(spl), [3, 5])
+@test roots(spl) ≈ [3, 5]
 
 
 # -----------------------------------------------------------------------------
@@ -103,21 +100,21 @@ y = [1., 2., 3., 1., 2., 3., 1., 2., 3.]
 z = [0., 0., 0., 2., 2., 2., 4., 4., 4.]
 spl = Spline2D(x, y, z; kx=1, ky=1, s=length(x))
 tx, ty = get_knots(spl)
-@test_approx_eq(tx, [1., 3.])
-@test_approx_eq(ty, [1., 3.])
-@test_approx_eq_eps(get_residual(spl), 0.0, 1e-16)
-@test_approx_eq(evaluate(spl, 2.0, 1.5), 2.0)
-@test_approx_eq(evalgrid(spl, [1.,1.5,2.], [1.,1.5]), [0. 0.; 1. 1.; 2. 2.])
+@test tx ≈ [1., 3.]
+@test ty ≈ [1., 3.]
+@test isapprox(get_residual(spl), 0.0, atol=1e-16)
+@test evaluate(spl, 2.0, 1.5) ≈ 2.0
+@test evalgrid(spl, [1.,1.5,2.], [1.,1.5]) ≈ [0. 0.; 1. 1.; 2. 2.]
 
 # test 1-d grid arrays
-@test_approx_eq(evalgrid(spl, [2.0], [1.5])[1, 1], 2.0)
+@test evalgrid(spl, [2.0], [1.5])[1, 1] ≈ 2.0
 
 # In this setting, lwrk2 is too small in the default run.
 x = linspace(-2, 2, 80)
 y = linspace(-2, 2, 80)
 z = x .+ y
 spl = Spline2D(x, y, z; s=length(x))
-@test_approx_eq(evaluate(spl, 1.0, 1.0), 2.0)
+@test evaluate(spl, 1.0, 1.0) ≈ 2.0
 
 # In this setting lwrk2 is too small multiple times!
 # Eventually an error about s being too small is thrown.
@@ -149,13 +146,10 @@ ans = [2.94429906542,
        1.06482509358,
        3.0]
 zi = evaluate(spl, xi, yi)
-@test_approx_eq(zi, ans)
+@test zi ≈ ans
 
-# test call on v0.4+
-if VERSION >= v"0.4.0"
-    zi = spl(xi, yi)
-    @test_approx_eq(zi, ans)
-end
+zi = spl(xi, yi)
+@test zi ≈ ans
 
 # grid output
 xi = [1., 1.5, 2.3, 4.5]
@@ -165,6 +159,6 @@ ans = [2.94429906542  1.16946130841  1.99831775701;
        1.67143209613  1.94853338542  2.00063588785;
        1.89392523364  1.8126946729  2.01042056075]
 zi = evalgrid(spl, xi, yi)
-@test_approx_eq(zi, ans)
+@test zi ≈ ans
 
 println("All tests passed.")
