@@ -1,4 +1,4 @@
-VERSION >= v"0.4.0-dev+6521" && __precompile__()
+__precompile__()
 
 module Dierckx
 
@@ -719,13 +719,11 @@ function evalgrid(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     return z
 end
 
-# call synonyms on v0.4+
-@compat if VERSION >= v"0.4.0"
-    (spl::Spline1D)(x::Real) = evaluate(spl, x)
-    (spl::Spline1D)(x::AbstractVector) = evaluate(spl, x)
-    (spl::Spline2D)(x::Real, y::Real) = evaluate(spl, x, y)
-    (spl::Spline2D)(x::AbstractVector, y::AbstractVector) =
-        evaluate(spl, x, y)
-end
+# call synonyms for evaluate(): @compat needed for v0.4
+@compat (spl::Spline1D)(x::Real) = evaluate(spl, x)
+@compat (spl::Spline1D)(x::AbstractVector) = evaluate(spl, x)
+@compat (spl::Spline2D)(x::Real, y::Real) = evaluate(spl, x, y)
+@compat (spl::Spline2D)(x::AbstractVector, y::AbstractVector) =
+    evaluate(spl, x, y)
 
 end # module
