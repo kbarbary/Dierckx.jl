@@ -170,6 +170,9 @@ function Spline1D(x::AbstractVector, y::AbstractVector,
     length(y) == m || error("length of x and y must match")
     length(w) == m || error("length of x and w must match")
     m > k || error("k must be less than length(x)")
+    length(xknots) <= m + k + 1 || error("length(xknots) <= length(x) + k + 1 must hold")
+    first(x) < first(xknots) || error("first(x) < first(xknots) must hold")
+    last(x) > last(xknots) || error("last(x) > last(xknots) must hold")
 
     # ensure inputs are of correct type
     xin = convert(Vector{Float64}, x)
