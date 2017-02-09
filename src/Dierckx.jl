@@ -408,8 +408,9 @@ get_knots(spl::Spline2D) = (spl.tx[spl.kx+1:end-spl.kx],
 get_residual(spl::Spline2D) = spl.fp
 
 
-# Helper function for calculating required size of work array in surfit.
+# Helper functions for calculating required size of work arrays in surfit.
 # Note that x and y here are as in the Fortran documentation.
+# These are translated from scipy/interpolate/src/fitpack.pyf
 function calc_surfit_lwrk1(m, kx, ky, nxest, nyest)
     u = nxest - kx - 1
     v = nyest - ky - 1
@@ -426,6 +427,15 @@ function calc_surfit_lwrk1(m, kx, ky, nxest, nyest)
         b2 = by + u - kx
     end
     return u*v*(2 + b1 + b2) + 2*(u+v+km*(m+ne)+ne-kx-ky) + b2 + 1
+end
+
+function calc_surfit_lwrk2(m, kx, ky, nxest, nyest)
+    u = nxest - kx - 1
+    v = nyest - ky - 1
+    bx = kx * v + ky + 1
+    by = ky * u + kx + 1
+    b2 = (bx <= by ? bx + v - ky : by + u - kx)
+    return u * v * (b2 + 1) + b2
 end
 
 # Construct spline from unstructured data
@@ -466,9 +476,9 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractVector;
     ier = Vector{Int32}(1)
 
     # work arrays
-    # Note: in lwrk1, x and y are swapped on purpose.
+    # Note: in lwrk1 and lwrk2, x and y are swapped on purpose.
     lwrk1 = calc_surfit_lwrk1(m, ky, kx, nyest, nxest)
-    lwrk2 = 1
+    lwrk2 = calc_surfit_lwrk2(m, ky, kx, nyest, nxest)
     kwrk = m + (nxest - 2*kx - 1) * (nyest - 2*ky - 1)
     wrk1 = Vector{Float64}(lwrk1)
     wrk2 = Vector{Float64}(lwrk2)
