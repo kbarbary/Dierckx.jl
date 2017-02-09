@@ -17,6 +17,10 @@ addons:
     packages:
     - gfortran
 
+before_install:
+  - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then brew update; fi
+  - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then brew install gcc; fi
+
 matrix:
   allow_failures:
     - os: osx # allow OS X to fail until intermittent failures can be resolved.
