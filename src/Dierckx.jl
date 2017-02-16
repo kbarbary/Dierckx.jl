@@ -297,32 +297,6 @@ function integrate(spline::Spline1D, a::Real, b::Real)
           &a, &b, wrk)
 end
 
-# 2D integration
-function integrate2D(spline::Spline2D, xb::Real, xe::Real, yb::Real, ye::Real)
-        nx = length(spline.tx)
-        ny = length(spline.ty)
-
-        kx = spline.kx
-        ky = spline.ky
-
-        wrk = Vector{Float64}(nx + ny -kx - ky -2)
-        ccall((:dblint_, ddierckx), Float64,
-              (Ptr{Float64}, Ptr{Int32},  # tx, nx
-               Ptr{Float64}, Ptr{Int32},  # ty, ny
-               Ptr{Float64}, Ptr{Int32},  # c, kx
-               Ptr{Int32}, #ky
-               Ptr{Float64}, Ptr{Float64},  # xb, xe
-               Ptr{Float64}, Ptr{Float64},  # yb, ye
-               Ptr{Float64}),  # wrk
-              spline.tx, &nx,
-              spline.ty, &ny, 
-              spline.c, &spline.kx,
-              &spline.ky,
-              &xb, &xe, 
-              &yb, &ye,
-              wrk)
-end
-
 
 
 # note: default maxn in scipy.interpolate is 3 * (length(spline.t) - 7)
@@ -745,6 +719,32 @@ function evalgrid(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     ier[1] == 0 || error(_eval2d_message)
 
     return z
+end
+
+# 2D integration
+function integrate2D(spline::Spline2D, xb::Real, xe::Real, yb::Real, ye::Real)
+        nx = length(spline.tx)
+        ny = length(spline.ty)
+
+        kx = spline.kx
+        ky = spline.ky
+
+        wrk = Vector{Float64}(nx + ny -kx - ky -2)
+        ccall((:dblint_, ddierckx), Float64,
+              (Ptr{Float64}, Ptr{Int32},  # tx, nx
+               Ptr{Float64}, Ptr{Int32},  # ty, ny
+               Ptr{Float64}, Ptr{Int32},  # c, kx
+               Ptr{Int32}, #ky
+               Ptr{Float64}, Ptr{Float64},  # xb, xe
+               Ptr{Float64}, Ptr{Float64},  # yb, ye
+               Ptr{Float64}),  # wrk
+              spline.tx, &nx,
+              spline.ty, &ny, 
+              spline.c, &spline.kx,
+              &spline.ky,
+              &xb, &xe, 
+              &yb, &ye,
+              wrk)
 end
 
 # call synonyms for evaluate(): @compat needed for v0.4

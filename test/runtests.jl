@@ -228,10 +228,11 @@ for (x_lower_bound, y_lower_bound, x_upper_bound, y_upper_bound) in range_2D_int
   m+=1
 end
 
+# tolerance level for tests
 tol = 1.e-6
 # test equality
-@fact  approximation_error[1] --> roughly(0; atol=tol)
-@fact  approximation_error[2] --> roughly(0; atol=tol)
-@fact  approximation_error[3] --> roughly(0; atol=tol)
+@test_approx_eq_eps(approximation_error[1], 0, tol)
+@test_approx_eq_eps(approximation_error[2], 0, tol)
+@test_approx_eq_eps(approximation_error[3], 0, tol)
 
 println("All tests passed.")
