@@ -57,16 +57,15 @@ spl = Spline1D(x, y)
 Evaluate the spline at some new points:
 
 ```julia
-evaluate(spl, [1.5, 2.5])  # result = [2.375, 14.625]
-evaluate(spl, 1.5)  # result = 2.375
+spl([1.5, 2.5])  # result = [2.375, 14.625]
+spl(1.5)  # result = 2.375
 ```
 
-On Julia 0.4+, one can call the spline object like a function:
+Equivalent to the above:
 
 ```julia
-# equivalent to above on Julia 0.4+
-spl([1.5, 2.5])
-spl(1.5)
+evaluate(spl, [1.5, 2.5])
+evaluate(spl, 1.5)
 ```
 
 Evaluate derivative, integral, or roots:
@@ -99,13 +98,8 @@ Evaluate at element-wise points:
 ```julia
 xi = [1., 1.5, 2.3, 4.5, 3.3, 3.2, 3.]
 yi = [1., 2.3, 5.3, 0.5, 3.3, 1.2, 3.]
-zi = evaluate(spline, xi, yi)  # 1-d array of length 7
-```
-
-On Julia 0.4, spline can be called:
-
-```julia
-zi = spline(xi, yi)  # equivalent to previous line (Julia 0.4+ only)
+zi = spline(xi, yi)  # 1-d array of length 7
+zi = evaluate(spline, xi, yi)  # equivalent to previous line
 ```
 
 Evaluate at grid spanned by input arrays:
@@ -243,27 +237,6 @@ equivalent of a specific classes in scipy.interpolate:
 | SmoothSphereBivariateSpline  |                                            |
 | LSQSphereBivariateSpline     |                                            |
 | RectSphereBivariateSpline    |                                            |
-
-
-Benchmarks
-----------
-
-Here are some benchmark results relative to Grid.jl v0.3.6 on Julia v0.3.3.
-These have yet to be updated to test against Interpolations.jl.
-
-| benchmark               | Grid.jl    | Dierckx.jl | ratio |
-|-------------------------|------------|------------|-------|
-| eval 1-d grid n=10      |  710.46 ns |  399.69 ns |  1.78 |
-| eval 1-d grid n=1000    |   62.86 us |   26.02 us |  2.42 |
-| eval 1-d grid n=100000  |    6.20 ms |    2.60 ms |  2.38 |
-| eval 2-d grid 10x10     |   11.09 us |    2.27 us |  4.89 |
-| eval 2-d grid 100x100   |    1.07 ms |  132.88 us |  8.08 |
-| eval 2-d grid 1000x1000 |  110.78 ms |   12.87 ms |  8.61 |
-
-Notes: This is for second order (quadratic) splines. `CoordInterpGrid`
-is used in Grid.jl, which doesn't allow arbitrary knot positions as in
-Dierckx.jl. Results obtained by running `benchmark.jl` script on a
-Core i7-4500U CPU @ 1.80GHz.
 
 
 License
