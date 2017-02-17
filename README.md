@@ -168,7 +168,7 @@ derivative(spl, x; nu=1)
 - Evaluate the `nu`-th derivative of the spline at points in `x`.
 
 ```julia
-integral(spl, a, b)
+integrate(spl, a, b)
 ```
 
 -  Definite integral of spline between `x=a` and `x=b`.
