@@ -9,7 +9,6 @@ export Spline1D,
        evaluate,
        derivative,
        integrate,
-       integrate2D,
        roots,
        evalgrid,
        get_knots,
@@ -722,7 +721,7 @@ function evalgrid(spline::Spline2D, x::AbstractVector, y::AbstractVector)
 end
 
 # 2D integration
-function integrate2D(spline::Spline2D, xb::Real, xe::Real, yb::Real, ye::Real)
+function integrate(spline::Spline2D, xb::Real, xe::Real, yb::Real, ye::Real)
         nx = length(spline.tx)
         ny = length(spline.ty)
 

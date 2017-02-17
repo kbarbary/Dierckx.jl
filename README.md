@@ -216,10 +216,10 @@ evalgrid(spl, x, y)
   coordinate arrays `x` and `y`. The input arrays must be monotonically
   increasing.
 
-- integral of a 2-d spline between [x0, x1]*[y0, y1]
+- integral of a 2-d spline over the domain `[x0, x1]*[y0, y1]`
 
 ```julia
-integrate2D(spl, x0, x1, y0, y1)
+integrate(spl, x0, x1, y0, y1)
 ```
 
 

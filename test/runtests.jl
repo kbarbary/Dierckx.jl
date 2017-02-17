@@ -162,47 +162,41 @@ zi = evalgrid(spl, xi, yi)
 @test zi ≈ ans
 
 # -----------------------------------------------------------------------------
-# Test 2D integration
+# Test 2-d integration
 
-f_test = [] #initialize an empyt list in which I will store the functions to test
+f_test = [] #initialize an empyt list to store the functions to test
 
 # Functions to test
-function test2D_1(x::Float64, y::Float64)
+function test2d_1(x::Float64, y::Float64)
   1 - x^2 -y^2
 end
 
-function test2D_2(x::Float64, y::Float64)
+function test2d_2(x::Float64, y::Float64)
   cos(x) + sin(y)
 end
 
-function test2D_3(x::Float64, y::Float64)
+function test2d_3(x::Float64, y::Float64)
   x*exp(x-y)
 end
 
-push!(f_test, test2D_1)
-push!(f_test, test2D_2)
-push!(f_test, test2D_3)
+f_test = [test2d_1, test2d_2, test2d_3]
 
-
-# Range of integration
-range_2D_integration = [] #list to store where the integration is taking place
-# (x_lower_bound, y_lower_bound, x_upper_bound, y_upper_bound)
-push!(range_2D_integration, (0, 0, 1, 1)) #integrate on [0, 1]*[0,1] for test2D_1
-push!(range_2D_integration, (0, 0, pi, pi)) #integrate on [0, pi]*[0,pi] for test2D_2
-push!(range_2D_integration, (0, 0, 1, 1)) #integrate on [0, 1]*[0,1] for test2D_3
+# Store the domains of integration 
+range_2d_integration = [(0, 1, 0, 1); (0, pi, 0, pi); (0, 1, 0, 1)] 
+# i.e. integrate on [0, 1]*[0,1] for test2d_1
+#      integrate on [0, pi]*[0,pi] for test2d_2
+#      integrate on [0, 1]*[0,1] for test2d_3
 
 # True value of the integrals
 true_value = collect([1/3; 2*pi; (e-1)/e])
 
-K = 50 #Define the number of points on the grids
-approximate_value = [] #initialize an empty list in which approximate values are stored
-approximation_error =[] #absolute value difference between the true and the approximate value
+K = 50 # define the number of points on the grids
+approximate_value = [] # initialize an empty list in which approximate values are stored
+approximation_error = [] # absolute value difference between the true and the approximate value
 
 m = 1 #iterator
 # Evaluate integrals and compare with true values
-for (x_lower_bound, y_lower_bound, x_upper_bound, y_upper_bound) in range_2D_integration 
-
-  println((x_lower_bound, x_upper_bound, y_lower_bound,  y_upper_bound))
+for (x_lower_bound, x_upper_bound, y_lower_bound, y_upper_bound) in range_2d_integration 
 
   # define grids for x and y dimensions:
   xgrid = collect(linspace(x_lower_bound, x_upper_bound,K))
@@ -216,12 +210,10 @@ for (x_lower_bound, y_lower_bound, x_upper_bound, y_upper_bound) in range_2D_int
     end
   end
 
-  # 
-  spl = Spline2D(xgrid[:], ygrid[:], fxygrid[:,:])
+  spl = Spline2D(xgrid, ygrid, fxygrid)
 
-
-  # 2D spline integration:
-  push!(approximate_value, integrate2D(spl, x_lower_bound, x_upper_bound, y_lower_bound, y_upper_bound))
+  # 2-d spline integration:
+  push!(approximate_value, integrate(spl, x_lower_bound, x_upper_bound, y_lower_bound, y_upper_bound))
   
   push!(approximation_error, abs(approximate_value[m] - true_value[m]))
 
@@ -231,8 +223,8 @@ end
 # tolerance level for tests
 tol = 1.e-6
 # test equality
-@test_approx_eq_eps(approximation_error[1], 0, tol)
-@test_approx_eq_eps(approximation_error[2], 0, tol)
-@test_approx_eq_eps(approximation_error[3], 0, tol)
+@test isapprox(approximation_error[1], 0., atol=tol)
+@test isapprox(approximation_error[2], 0., atol=tol)
+@test isapprox(approximation_error[3], 0., atol=tol)
 
 println("All tests passed.")
