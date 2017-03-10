@@ -45,6 +45,14 @@ desired = [0.35100374, 0.51715855, 0.87789547, 0.98719344]
 actual = evaluate(spl, [0.1, 0.5, 0.9, 0.99])
 @test isapprox(actual, desired, atol=5e-4)
 
+# test periodic
+x = [1., 2., 3., 4., 5.]
+y = [4., 1., 4., 1., 4.]
+spl = Spline1D(x, y, periodic=true)
+
+@test derivative(spl, 1) ≈ derivative(spl, 5)
+@test derivative(spl, 1, nu=2) ≈ derivative(spl, 5, nu=2)
+
 # tests for out-of-range
 x = [0.0:4.0;]
 y = x.^3
@@ -90,6 +98,74 @@ y = (x-4).^2-1
 spl = Spline1D(x, y)
 @test roots(spl) ≈ [3, 5]
 
+u = [1., 2., 3.]
+x = [1. 2. 3.; 0. 2. 4.]
+spl = Spline1D(u, x, k=1, s=size(x, 2))
+
+xi = evaluate(spl, [1.0, 1.5, 2.0])
+@test xi ≈ [1.0 1.5 2.0; 0.0 1.0 2.0]
+@test evaluate(spl, 1.5) ≈ [1.5, 1.0]
+@test get_knots(spl) ≈ [1., 3.]
+@test get_coeffs(spl) ≈ [1.0 3.0; 0.0 4.0]
+@test isapprox(get_residual(spl), 0.0, atol=1.e-30)
+
+@test spl([1.0, 1.5, 2.0]) ≈ [1.0 1.5 2.0; 0.0 1.0 2.0]
+@test spl(1.5) ≈ [1.5, 1.0]
+
+# test that a copy is returned by get_knots()
+knots = get_knots(spl)
+knots[1] = 1000.
+@test get_knots(spl) ≈ [1., 3.]
+
+# test periodic
+x = [23. 24. 25. 25. 24. 23.;
+     13. 12. 12. 13. 13. 13.]
+spl = Spline1D(x, periodic=true)
+@test evaluate(spl, 0) ≈ evaluate(spl, 1)
+@test derivative(spl, 0) ≈ derivative(spl, 1)
+@test derivative(spl, 0, nu=2) ≈ derivative(spl, 1, nu=2)
+
+# tests for out-of-range
+u = 0.0:4.0
+x = [u'.^2; u'.^3]
+
+up = linspace(-8.0, 13.0, 100)
+up_zeros = Float64[(0. <= ui <= 4.) ? ui : 0.0 for ui in up]
+up_clip = Float64[(0. <= ui <= 4.) ? ui : (ui<0.0)? 0.0 : 4. for ui in up]
+
+spl = Spline1D(u, x)
+t = get_knots(spl)[2: end-1]  # knots, excluding those at endpoints
+spl2 = Spline1D(u, x, t)
+
+@test evaluate(spl, up) ≈ [up_clip'.^2; up_clip'.^3]
+@test evaluate(spl2, up) ≈ [up_clip'.^2; up_clip'.^3]
+
+# test other bc's
+spl = Spline1D(u, x; bc="extrapolate")
+@test evaluate(spl, up) ≈ [up'.^2; up'.^3]
+spl = Spline1D(u, x; bc="zero")
+@test evaluate(spl, up) ≈ [up_zeros'.^2; up_zeros'.^3]
+spl = Spline1D(u, x; bc="error")
+@test_throws ErrorException evaluate(spl, up)
+
+# test unknown bc
+@test_throws ErrorException Spline1D(u, x; bc="unknown")
+
+# test derivative
+u = linspace(0, 1, 70)
+x = [u'.^2; u'.^3]
+spl = Spline1D(u, x)
+ut = [0.3, 0.4, 0.5]
+@test derivative(spl, 0.3) ≈ [2*0.3, 3*0.3^2]
+@test derivative(spl, ut) ≈ [2*ut'; 3*ut'.^2]
+@test derivative(spl, 0.3, nu=2) ≈ [2.0, 6*0.3]
+@test derivative(spl, ut, nu=2) ≈ [2*ones(3)'; 6*ut']
+
+# test integral
+u = linspace(0, 10, 70)
+x = [u'.^2; u'.^3]
+spl = Spline1D(u, x)
+@test integrate(spl, 1.0, 5.0) ≈ [5.^3/3 - 1/3, 5.^4/4 - 1/4]
 
 # -----------------------------------------------------------------------------
 # Spline2D
@@ -186,114 +262,5 @@ for (f, domain, exact) in [(test2d_1, (0.0, 1.0, 0.0, 1.0), 1.0/3.0),
     spl = Spline2D(xgrid, ygrid, fxygrid)
     @test isapprox(integrate(spl, x0, x1, y0, y1), exact, atol=1e-6)
 end
-
-# -----------------------------------------------------------------------------
-# splrep tests
-
-# test evaluation
-x = [1., 2., 3.]
-y = [0., 2., 4.]
-tck = splrep(x, y; k=1, s=length(x))
-
-@test splev(tck, [1.0, 1.5, 2.0]) ≈ [0.0, 1.0, 2.0]
-@test splev(tck, [2.5, 3.0, 3.5, 4.0, 4.5], ext=0) ≈ [3.0, 4.0, 5.0, 6.0, 7.0]
-@test splev(tck, [2.5, 3.0, 3.5, 4.0, 4.5], ext=1) ≈ [3.0, 4.0, 0.0, 0.0, 0.0]
-@test_throws ErrorException splev(tck, [2.5, 3.0, 3.5, 4.0, 4.5], ext=2)
-@test splev(tck, [2.5, 3.0, 3.5, 4.0, 4.5], ext=3) ≈ [3.0, 4.0, 4.0, 4.0, 4.0]
-@test splev(tck, 1.5) ≈ 1.0
-@test splev(tck, 4.0, ext=0) ≈ 6.0
-@test splev(tck, 4.0, ext=1) ≈ 0.0
-@test_throws ErrorException splev(tck, 4.0, ext=2)
-@test splev(tck, 4.0, ext=3) ≈ 4.0
-t, c, k = tck
-@test t[1+k:end-k] ≈ [1., 3.]
-@test c[1:end-k+1] ≈ [0., 4.]
-
-# test derivative
-x = linspace(0, 1, 70)
-y = x.^3
-tck = splrep(x, y)
-xt = [0.3, 0.4, 0.5]
-@test splder(tck, 0.3) ≈ 3*0.3^2
-@test splder(tck, xt) ≈ 3xt.^2
-
-# test integral
-x = linspace(0, 10, 70)
-y = x.^2
-tck = splrep(x, y)
-@test splint(tck, 1.0, 5.0) ≈ 5.^3/3 - 1/3
-
-# test periodic
-x = [1., 2., 3., 4., 5.]
-y = [4., 1., 4., 1., 4.]
-tck = splrep(x, y, periodic=true)
-@test splder(tck, 1) ≈ splder(tck, 5)
-@test splder(tck, 1, nu=2) ≈ splder(tck, 5, nu=2)
-
-# -----------------------------------------------------------------------------
-# splprep tests
-
-# test evaluation
-u = [1., 2., 3.]
-x = [1. 2. 3.; 0. 2. 4.]
-tck, v = splprep(u, x, k=1, s=size(x, 2))
-@test splev(tck, [1.0, 1.5, 2.0]) ≈ [1.0 1.5 2.0;
-                                     0.0 1.0 2.0]
-@test splev(tck, [2.5, 3.0, 3.5, 4.0, 4.5], ext=0) ≈ [2.5 3.0 3.5 4.0 4.5;
-                                                      3.0 4.0 5.0 6.0 7.0]
-@test splev(tck, [2.5, 3.0, 3.5, 4.0, 4.5], ext=1) ≈ [2.5 3.0 0.0 0.0 0.0;
-                                                      3.0 4.0 0.0 0.0 0.0]
-@test_throws ErrorException splev(tck, [2.5, 3.0, 3.5, 4.0, 4.5], ext=2)
-@test splev(tck, [2.5, 3.0, 3.5, 4.0, 4.5], ext=3) ≈ [2.5 3.0 3.0 3.0 3.0;
-                                                      3.0 4.0 4.0 4.0 4.0]
-@test splev(tck, 1.5) ≈ [1.5, 1.0]
-@test splev(tck, 4.0, ext=0) ≈ [4.0, 6.0]
-@test splev(tck, 4.0, ext=1) ≈ [0.0, 0.0]
-@test_throws ErrorException splev(tck, 4.0, ext=2)
-@test splev(tck, 4.0, ext=3) ≈ [3.0, 4.0]
-t, c, k = tck
-@test t[1+k:end-k] ≈ [1.0, 3.0]
-@test c[:, 1:end-k+1] ≈ [1.0 3.0; 0.0 4.0]
-
-tck, v = splprep(x, k=1, s=size(x, 2))
-@test splev(tck, [0.0, 0.25, 0.5]) ≈ [1.0 1.5 2.0;
-                                     0.0 1.0 2.0]
-@test splev(tck, [0.75, 1.0, 1.25, 1.5, 1.75], ext=0) ≈ [2.5 3.0 3.5 4.0 4.5;
-                                                         3.0 4.0 5.0 6.0 7.0]
-@test splev(tck, [0.75, 1.0, 1.25, 1.5, 1.75], ext=1) ≈ [2.5 3.0 0.0 0.0 0.0;
-                                                         3.0 4.0 0.0 0.0 0.0]
-@test_throws ErrorException splev(tck, [0.75, 1.0, 1.25, 1.5, 1.75], ext=2)
-@test splev(tck, [0.75, 1.0, 1.25, 1.5, 1.75], ext=3) ≈ [2.5 3.0 3.0 3.0 3.0;
-                                                         3.0 4.0 4.0 4.0 4.0]
-@test splev(tck, 0.25) ≈ [1.5, 1.0]
-@test splev(tck, 1.5, ext=0) ≈ [4.0, 6.0]
-@test splev(tck, 1.5, ext=1) ≈ [0.0, 0.0]
-@test_throws ErrorException splev(tck, 1.5, ext=2)
-@test splev(tck, 1.5, ext=3) ≈ [3.0, 4.0]
-
-# test derivative
-u = linspace(0, 1, 70)
-x = hcat([u.^2, u.^3]...)'
-tck, v = splprep(u, x)
-xt = [0.3, 0.4, 0.5]
-@test splder(tck, 0.3) ≈ [2*0.3, 3*0.3^2]
-@test splder(tck, xt) ≈ hcat([2*xt, 3*xt.^2]...)'
-@test splder(tck, 0.3, nu=2) ≈ [2.0, 6*0.3]
-@test splder(tck, xt, nu=2) ≈ hcat([2*ones(3), 6*xt]...)'
-
-# test integral
-u = linspace(0, 10, 70)
-x = hcat([u.^2, u.^3]...)'
-tck, v = splprep(u, x)
-splprep(x)
-@test splint(tck, 1.0, 5.0) ≈ [5.^3/3 - 1/3, 5.^4/4 - 1/4]
-
-# test periodic
-x = [23. 24. 25. 25. 24. 23.;
-     13. 12. 12. 13. 13. 13.]
-tck, v = splprep(x, periodic=true)
-@test splev(tck, 0) ≈ splev(tck, 1)
-@test splder(tck, 0) ≈ splder(tck, 1)
-@test splder(tck, 0, nu=2) ≈ splder(tck, 1, nu=2)
 
 println("All tests passed.")
