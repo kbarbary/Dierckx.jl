@@ -6,6 +6,7 @@ using Compat
 
 export Spline1D,
        Spline2D,
+       ParametricSpline,
        evaluate,
        derivative,
        integrate,
@@ -77,16 +78,14 @@ _translate_bc(bc::Int) = (bc == 0 ? "extrapolate" :
 
 type Spline1D
     t::Vector{Float64}
-    c::VecOrMat{Float64}
+    c::Vector{Float64}
     k::Int
     bc::Int
     fp::Float64
 end
 
 get_knots(spl::Spline1D) = spl.t[spl.k+1:end-spl.k]
-_get_coeffs(c::Vector{Float64}, k::Int) = c[1:end-k+1]
-_get_coeffs(c::Matrix{Float64}, k::Int) = c[:, 1:end-k+1]
-get_coeffs(spl::Spline1D) = _get_coeffs(spl.c, spl.k)
+get_coeffs(spl::Spline1D) = spl.c[1:end-spl.k+1]
 get_residual(spl::Spline1D) = spl.fp
 
 function reallycompact(a::Vector)
@@ -187,10 +186,237 @@ function Spline1D(x::AbstractVector, y::AbstractVector;
     return Spline1D(t, c, k, _translate_bc(bc), fp[])
 end
 
-function Spline1D(x::AbstractMatrix;
-                  w::AbstractVector=ones(size(x, 2)),
-                  k::Int=3, s::Real=0.0, bc::AbstractString="nearest",
+# version with user-supplied knots
+function Spline1D(x::AbstractVector, y::AbstractVector,
+                  knots::AbstractVector;
+                  w::AbstractVector=ones(length(x)),
+                  k::Int=3, bc::AbstractString="nearest",
                   periodic::Bool=false)
+    m = length(x)
+    length(y) == m || error("length of x and y must match")
+    length(w) == m || error("length of x and w must match")
+    m > k || error("k must be less than length(x)")
+    length(knots) <= m + k + 1 || error("length(knots) <= length(x) + k + 1 must hold")
+    first(x) < first(knots) || error("first(x) < first(knots) must hold")
+    last(x) > last(knots) || error("last(x) > last(knots) must hold")
+
+    # ensure inputs are of correct type
+    xin = convert(Vector{Float64}, x)
+    yin = convert(Vector{Float64}, y)
+    win = convert(Vector{Float64}, w)
+
+    # x knots
+    # (k+1) knots will be added on either end of interior knots.
+    n = length(knots) + 2(k + 1)
+    t = Vector{Float64}(n)  # All knots
+    t[k+2:end-k-1] = knots
+
+    # outputs
+    c = Vector{Float64}(n)
+    fp = Ref{Float64}(0)
+    ier = Ref{Int32}(0)
+
+    # workspace
+    lwrk = 0
+    if periodic
+      lwrk = m * (k + 1) + n*(8 + 5k)
+    else
+      lwrk = m * (k + 1) + n*(7 + 3k)
+    end
+    wrk = Vector{Float64}(lwrk)
+    iwrk = Vector{Int32}(n)
+
+    if !periodic
+      ccall((:curfit_, ddierckx), Void,
+            (Ptr{Int32}, Ptr{Int32},  # iopt, m
+             Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # x, y, w
+             Ptr{Float64}, Ptr{Float64},  # xb, xe
+             Ptr{Int32}, Ptr{Float64},  # k, s
+             Ptr{Int32}, Ptr{Int32}, # nest, n
+             Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # t, c, fp
+             Ptr{Float64}, Ptr{Int32}, Ptr{Int32},  # wrk, lwrk, iwrk
+             Ptr{Int32}),  # ier
+            &(-1), &m, xin, yin, win, &xin[1], &xin[end], &k, &(-1.0),
+            &n, &n, t, c, fp, wrk, &lwrk, iwrk, ier)
+    else
+      ccall((:percur_, ddierckx), Void,
+            (Ptr{Int32}, Ptr{Int32}, # iopt, m
+             Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, # x, y, w
+             Ptr{Int32}, Ptr{Float64}, # k, s
+             Ptr{Int32}, Ptr{Int32}, # nest, n
+             Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, # t, c, fp
+             Ptr{Float64}, Ptr{Int32}, Ptr{Int32}, # wrk, lwrk, iwrk
+             Ptr{Int32}), # ier
+            &(-1), &m, xin, yin, win, &k, &(-1.0), &n, &n, t, c,
+            fp, wrk, &lwrk, iwrk, ier)
+    end
+
+    ier[] <= 0 || error(_fit1d_messages[ier[]])
+    resize!(c, n - k - 1)
+
+    return Spline1D(t, c, k, _translate_bc(bc), fp[])
+end
+
+function _evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
+                   x::Vector{Float64}; bc::Int=0)
+   bc in (0, 1, 2, 3) || error("bc = $bc not in (0, 1, 2, 3)")
+   m = length(x)
+   xin = convert(Vector{Float64}, x)
+   y = Vector{Float64}(m)
+   ier = Ref{Int32}(0)
+   ccall((:splev_, ddierckx), Void,
+         (Ptr{Float64}, Ptr{Int32},
+          Ptr{Float64}, Ptr{Int32},
+          Ptr{Float64}, Ptr{Float64}, Ptr{Int32},
+          Ptr{Int32}, Ptr{Int32}),
+         t, &length(t), c, &k, xin, y, &m, &bc, ier)
+
+   ier[] == 0 || error(_eval1d_messages[ier[]])
+   return y
+end
+
+function _evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
+                   x::Real; bc::Int=0)
+   bc in (0, 1, 2, 3) || error("bc = $bc not in (0, 1, 2, 3)")
+   y = Ref{Float64}(0)
+   ier = Ref{Int32}(0)
+   ccall((:splev_, ddierckx), Void,
+         (Ptr{Float64}, Ptr{Int32},
+          Ptr{Float64}, Ptr{Int32},
+          Ptr{Float64}, Ptr{Float64}, Ptr{Int32},
+          Ptr{Int32}, Ptr{Int32}),
+         t, &length(t), c, &k, &Float64(x), y, &1, &bc, ier)
+
+   ier[] == 0 || error(_eval1d_messages[ier[]])
+   return y[]
+end
+
+function evaluate(spline::Spline1D, x::AbstractVector)
+  xin = convert(Vector{Float64}, x)
+  _evaluate(spline.t, spline.c, spline.k, xin, bc=spline.bc)
+end
+
+evaluate(spline::Spline1D, x::Real) =
+  _evaluate(spline.t, spline.c, spline.k, x, bc=spline.bc)
+
+function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
+                     x::Vector{Float64}; nu::Int=1, bc::Int=0)
+   (1 <= nu <= k) || error("order of derivative must be positive and less than or equal to spline order")
+   m = length(x)
+   n = length(t)
+   wrk = Vector{Float64}(n)
+   y = Vector{Float64}(m)
+   ier = Ref{Int32}(0)
+   ccall((:splder_, ddierckx), Void,
+         (Ptr{Float64}, Ptr{Int32}, # t, n
+          Ptr{Float64}, Ptr{Int32}, # c, k
+          Ptr{Int32}, # nu
+          Ptr{Float64}, Ptr{Float64}, Ptr{Int32}, # x, y, m
+          Ptr{Int32}, Ptr{Float64}, Ptr{Int32}), # e, wrk, ier
+         t, &n, c, &k, &nu, x, y, &m, &bc, wrk, ier)
+   ier[] == 0 || error(_eval1d_messages[ier[]])
+   return y
+end
+
+function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
+                     x::Real; nu::Int=1, bc::Int=0)
+   (1 <= nu <= k) || error("order of derivative must be positive and less than or equal to spline order")
+   n = length(t)
+   wrk = Vector{Float64}(n)
+   y = Ref{Float64}(0)
+   ier = Ref{Int32}(0)
+   ccall((:splder_, ddierckx), Void,
+         (Ptr{Float64}, Ptr{Int32}, # t, n
+          Ptr{Float64}, Ptr{Int32}, # c, k
+          Ptr{Int32}, # nu
+          Ptr{Float64}, Ptr{Float64}, Ptr{Int32}, # x, y, m
+          Ptr{Int32}, Ptr{Float64}, Ptr{Int32}), # e, wrk, ier
+         t, &n, c, &k, &nu, &Float64(x), y, &1, &bc, wrk, ier)
+   ier[] == 0 || error(_eval1d_messages[ier[]])
+   return y[]
+end
+
+# TODO: should the function name be evalder, derivative, or grad?
+#       or should it be integrated with evaluate, above?
+#       (problem with that: derivative doesn't accept bc="nearest")
+# TODO: should `nu` be `d`?
+function derivative(spline::Spline1D, x::AbstractVector; nu::Int=1)
+  xin = convert(Vector{Float64}, x)
+  _derivative(spline.t, spline.c, spline.k, xin; nu=nu, bc=spline.bc)
+end
+
+derivative(spline::Spline1D, x::Real; nu::Int=1) =
+  _derivative(spline.t, spline.c, spline.k, x; nu=nu, bc=spline.bc)
+
+function _integrate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
+                    a::Real, b::Real)
+  n = length(t)
+  wrk = Vector{Float64}(n)
+  ccall((:splint_, ddierckx), Float64,
+        (Ptr{Float64}, Ptr{Int32},
+         Ptr{Float64}, Ptr{Int32},
+         Ptr{Float64}, Ptr{Float64},
+         Ptr{Float64}),
+         t, &n, c, &k,
+         &Float64(a), &Float64(b), wrk)
+end
+
+integrate(spline::Spline1D, a::Real, b::Real) =
+  _integrate(spline.t, spline.c, spline.k, a, b)
+
+# TODO roots for parametric splines
+# note: default maxn in scipy.interpolate is 3 * (length(spline.t) - 7)
+function roots(spline::Spline1D; maxn::Integer=8)
+    if spline.k != 3
+        error("root finding only supported for cubic splines (k=3)")
+    end
+    n = length(spline.t)
+    zeros = Vector{Float64}(maxn)
+    m = Vector{Int32}(1)
+    ier = Vector{Int32}(1)
+    ccall((:sproot_, ddierckx), Void,
+          (Ptr{Float64}, Ptr{Int32},  # t, n
+           Ptr{Float64}, Ptr{Float64},  # c, zeros
+           Ptr{Int32}, Ptr{Int32},  # mest, m
+           Ptr{Int32}),  # ier
+          spline.t, &n, spline.c, zeros,
+          &maxn, m, ier)
+
+    if ier[1] == 0
+        return zeros[1:m[1]]
+    elseif ier[1] == 1
+        warn("number of zeros exceeded maxn; only first maxn zeros returned")
+        return zeros
+    elseif ier[1] == 10
+        error("Invalid input data.")
+    else
+        error("unknown error code in sproot: $(ier[1])")
+    end
+end
+
+# ----------------------------------------------------------------------------
+# parametric splines
+
+type ParametricSpline
+  t::Vector{Float64}
+  c::Matrix{Float64}
+  k::Int
+  bc::Int
+  fp::Float64
+end
+
+get_knots(spl::ParametricSpline) = spl.t[spl.k+1:end-spl.k]
+get_coeffs(spl::ParametricSpline) = spl.c[:, 1:end-spl.k+1]
+get_residual(spl::ParametricSpline) = spl.fp
+
+function show(io::IO, spl::ParametricSpline)
+    print(io, """ParametricSpline(knots=$(reallycompact(get_knots(spl))), k=$(spl.k), extrapolation=\"$(_translate_bc(spl.bc))\", residual=$(spl.fp))""")
+end
+
+function ParametricSpline(x::AbstractMatrix;
+                          w::AbstractVector=ones(size(x, 2)),
+                          k::Int=3, s::Real=0.0, bc::AbstractString="nearest",
+                          periodic::Bool=false)
     idim, m = size(x)
     if periodic
       if x[:, 1] != x[:, end]
@@ -285,15 +511,15 @@ function Spline1D(x::AbstractMatrix;
     resize!(t, n[])
     c = [c[n[]*(j-1) + i] for j=1:idim, i=1:n[]-k-1]
 
-    return Spline1D(t, c, k, _translate_bc(bc), fp[])
+    return ParametricSpline(t, c, k, _translate_bc(bc), fp[])
 end
 
 # version with user-supplied u
-function Spline1D(u::AbstractVector, x::AbstractMatrix;
-                  ub::Real=u[1], ue::Real=u[end],
-                  w::AbstractVector=ones(size(x, 2)),
-                  k::Int=3, s::Real=0.0, bc::AbstractString="nearest",
-                  periodic::Bool=false)
+function ParametricSpline(u::AbstractVector, x::AbstractMatrix;
+                          ub::Real=u[1], ue::Real=u[end],
+                          w::AbstractVector=ones(size(x, 2)),
+                          k::Int=3, s::Real=0.0, bc::AbstractString="nearest",
+                          periodic::Bool=false)
     idim, m = size(x)
     if periodic
       if x[:, 1] != x[:, end]
@@ -393,86 +619,15 @@ function Spline1D(u::AbstractVector, x::AbstractMatrix;
       resize!(t, n[])
       c = [c[n[]*(j-1) + i] for j=1:idim, i=1:n[]-k-1]
 
-      return Spline1D(t, c, k, _translate_bc(bc), fp[])
+      return ParametricSpline(t, c, k, _translate_bc(bc), fp[])
 end
 
 # version with user-supplied knots
-function Spline1D(x::AbstractVector, y::AbstractVector,
-                  knots::AbstractVector;
-                  w::AbstractVector=ones(length(x)),
-                  k::Int=3, bc::AbstractString="nearest",
-                  periodic::Bool=false)
-    m = length(x)
-    length(y) == m || error("length of x and y must match")
-    length(w) == m || error("length of x and w must match")
-    m > k || error("k must be less than length(x)")
-    length(knots) <= m + k + 1 || error("length(knots) <= length(x) + k + 1 must hold")
-    first(x) < first(knots) || error("first(x) < first(knots) must hold")
-    last(x) > last(knots) || error("last(x) > last(knots) must hold")
-
-    # ensure inputs are of correct type
-    xin = convert(Vector{Float64}, x)
-    yin = convert(Vector{Float64}, y)
-    win = convert(Vector{Float64}, w)
-
-    # x knots
-    # (k+1) knots will be added on either end of interior knots.
-    n = length(knots) + 2(k + 1)
-    t = Vector{Float64}(n)  # All knots
-    t[k+2:end-k-1] = knots
-
-    # outputs
-    c = Vector{Float64}(n)
-    fp = Ref{Float64}(0)
-    ier = Ref{Int32}(0)
-
-    # workspace
-    lwrk = 0
-    if periodic
-      lwrk = m * (k + 1) + n*(8 + 5k)
-    else
-      lwrk = m * (k + 1) + n*(7 + 3k)
-    end
-    wrk = Vector{Float64}(lwrk)
-    iwrk = Vector{Int32}(n)
-
-    if !periodic
-      ccall((:curfit_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32},  # iopt, m
-             Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # x, y, w
-             Ptr{Float64}, Ptr{Float64},  # xb, xe
-             Ptr{Int32}, Ptr{Float64},  # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # t, c, fp
-             Ptr{Float64}, Ptr{Int32}, Ptr{Int32},  # wrk, lwrk, iwrk
-             Ptr{Int32}),  # ier
-            &(-1), &m, xin, yin, win, &xin[1], &xin[end], &k, &(-1.0),
-            &n, &n, t, c, fp, wrk, &lwrk, iwrk, ier)
-    else
-      ccall((:percur_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32}, # iopt, m
-             Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, # x, y, w
-             Ptr{Int32}, Ptr{Float64}, # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, # t, c, fp
-             Ptr{Float64}, Ptr{Int32}, Ptr{Int32}, # wrk, lwrk, iwrk
-             Ptr{Int32}), # ier
-            &(-1), &m, xin, yin, win, &k, &(-1.0), &n, &n, t, c,
-            fp, wrk, &lwrk, iwrk, ier)
-    end
-
-    ier[] <= 0 || error(_fit1d_messages[ier[]])
-    resize!(c, n - k - 1)
-
-    return Spline1D(t, c, k, _translate_bc(bc), fp[])
-end
-
-# version with user-supplied knots
-function Spline1D(x::AbstractMatrix, knots::AbstractVector;
-                  w::AbstractVector=ones(size(x, 2)),
-                  k::Int=3, bc::AbstractString="nearest",
-                  periodic::Bool=false)
-                  idim, m = size(x)
+function ParametricSpline(x::AbstractMatrix, knots::AbstractVector;
+                          w::AbstractVector=ones(size(x, 2)),
+                          k::Int=3, bc::AbstractString="nearest",
+                          periodic::Bool=false)
+                          idim, m = size(x)
     idim, m = size(x)
     if periodic
       if x[:, 1] != x[:, end]
@@ -563,16 +718,16 @@ function Spline1D(x::AbstractMatrix, knots::AbstractVector;
 
     c = [c[n*(j-1) + i] for j=1:idim, i=1:n-k-1]
 
-    return Spline1D(t, c, k, _translate_bc(bc), fp[])
+    return ParametricSpline(t, c, k, _translate_bc(bc), fp[])
 end
 
 # version with user-supplied u and knots
-function Spline1D(u::AbstractVector, x::AbstractMatrix,
-                  knots::AbstractVector;
-                  ub::Real=u[1], ue::Real=u[end],
-                  w::AbstractVector=ones(size(x, 2)),
-                  k::Int=3, bc::AbstractString="nearest",
-                  periodic::Bool=false)
+function ParametricSpline(u::AbstractVector, x::AbstractMatrix,
+                          knots::AbstractVector;
+                          ub::Real=u[1], ue::Real=u[end],
+                          w::AbstractVector=ones(size(x, 2)),
+                          k::Int=3, bc::AbstractString="nearest",
+                          periodic::Bool=false)
     idim, m = size(x)
     if periodic
       if x[:, 1] != x[:, end]
@@ -668,41 +823,7 @@ function Spline1D(u::AbstractVector, x::AbstractMatrix,
 
     c = [c[n*(j-1) + i] for j=1:idim, i=1:n-k-1]
 
-    return Spline1D(t, c, k, _translate_bc(bc), fp[])
-end
-
-function _evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                   x::Vector{Float64}; bc::Int=0)
-   bc in (0, 1, 2, 3) || error("bc = $bc not in (0, 1, 2, 3)")
-   m = length(x)
-   xin = convert(Vector{Float64}, x)
-   y = Vector{Float64}(m)
-   ier = Ref{Int32}(0)
-   ccall((:splev_, ddierckx), Void,
-         (Ptr{Float64}, Ptr{Int32},
-          Ptr{Float64}, Ptr{Int32},
-          Ptr{Float64}, Ptr{Float64}, Ptr{Int32},
-          Ptr{Int32}, Ptr{Int32}),
-         t, &length(t), c, &k, xin, y, &m, &bc, ier)
-
-   ier[] == 0 || error(_eval1d_messages[ier[]])
-   return y
-end
-
-function _evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                   x::Real; bc::Int=0)
-   bc in (0, 1, 2, 3) || error("bc = $bc not in (0, 1, 2, 3)")
-   y = Ref{Float64}(0)
-   ier = Ref{Int32}(0)
-   ccall((:splev_, ddierckx), Void,
-         (Ptr{Float64}, Ptr{Int32},
-          Ptr{Float64}, Ptr{Int32},
-          Ptr{Float64}, Ptr{Float64}, Ptr{Int32},
-          Ptr{Int32}, Ptr{Int32}),
-         t, &length(t), c, &k, &Float64(x), y, &1, &bc, ier)
-
-   ier[] == 0 || error(_eval1d_messages[ier[]])
-   return y[]
+    return ParametricSpline(t, c, k, _translate_bc(bc), fp[])
 end
 
 _evaluate(t::Vector{Float64}, c::Matrix{Float64}, k::Int,
@@ -713,50 +834,13 @@ _evaluate(t::Vector{Float64}, c::Matrix{Float64}, k::Int,
           x::Real; bc::Int=0) =
   vec(mapslices(v -> _evaluate(t, v, k, x, bc=bc), c, [2]))
 
-function evaluate(spline::Spline1D, x::AbstractVector)
+function evaluate(spline::ParametricSpline, x::AbstractVector)
   xin = convert(Vector{Float64}, x)
   _evaluate(spline.t, spline.c, spline.k, xin, bc=spline.bc)
 end
 
-evaluate(spline::Spline1D, x::Real) =
+evaluate(spline::ParametricSpline, x::Real) =
   _evaluate(spline.t, spline.c, spline.k, x, bc=spline.bc)
-
-function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                     x::Vector{Float64}; nu::Int=1, bc::Int=0)
-   (1 <= nu <= k) || error("order of derivative must be positive and less than or equal to spline order")
-   m = length(x)
-   n = length(t)
-   wrk = Vector{Float64}(n)
-   y = Vector{Float64}(m)
-   ier = Ref{Int32}(0)
-   ccall((:splder_, ddierckx), Void,
-         (Ptr{Float64}, Ptr{Int32}, # t, n
-          Ptr{Float64}, Ptr{Int32}, # c, k
-          Ptr{Int32}, # nu
-          Ptr{Float64}, Ptr{Float64}, Ptr{Int32}, # x, y, m
-          Ptr{Int32}, Ptr{Float64}, Ptr{Int32}), # e, wrk, ier
-         t, &n, c, &k, &nu, x, y, &m, &bc, wrk, ier)
-   ier[] == 0 || error(_eval1d_messages[ier[]])
-   return y
-end
-
-function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                     x::Real; nu::Int=1, bc::Int=0)
-   (1 <= nu <= k) || error("order of derivative must be positive and less than or equal to spline order")
-   n = length(t)
-   wrk = Vector{Float64}(n)
-   y = Ref{Float64}(0)
-   ier = Ref{Int32}(0)
-   ccall((:splder_, ddierckx), Void,
-         (Ptr{Float64}, Ptr{Int32}, # t, n
-          Ptr{Float64}, Ptr{Int32}, # c, k
-          Ptr{Int32}, # nu
-          Ptr{Float64}, Ptr{Float64}, Ptr{Int32}, # x, y, m
-          Ptr{Int32}, Ptr{Float64}, Ptr{Int32}), # e, wrk, ier
-         t, &n, c, &k, &nu, &Float64(x), y, &1, &bc, wrk, ier)
-   ier[] == 0 || error(_eval1d_messages[ier[]])
-   return y[]
-end
 
 _derivative(t::Vector{Float64}, c::Matrix{Float64}, k::Int,
             x::Vector{Float64}; nu::Int=1, bc::Int=0) =
@@ -766,68 +850,20 @@ _derivative(t::Vector{Float64}, c::Matrix{Float64}, k::Int,
             x::Real; nu::Int=1, bc::Int=0) =
   vec(mapslices(v -> _derivative(t, v, k, x; nu=nu, bc=bc), c, [2]))
 
-# TODO: should the function name be evalder, derivative, or grad?
-#       or should it be integrated with evaluate, above?
-#       (problem with that: derivative doesn't accept bc="nearest")
-# TODO: should `nu` be `d`?
-function derivative(spline::Spline1D, x::AbstractVector; nu::Int=1)
+function derivative(spline::ParametricSpline, x::AbstractVector; nu::Int=1)
   xin = convert(Vector{Float64}, x)
   _derivative(spline.t, spline.c, spline.k, xin; nu=nu, bc=spline.bc)
 end
 
-derivative(spline::Spline1D, x::Real; nu::Int=1) =
+derivative(spline::ParametricSpline, x::Real; nu::Int=1) =
   _derivative(spline.t, spline.c, spline.k, x; nu=nu, bc=spline.bc)
-
-function _integrate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                    a::Real, b::Real)
-  n = length(t)
-  wrk = Vector{Float64}(n)
-  ccall((:splint_, ddierckx), Float64,
-        (Ptr{Float64}, Ptr{Int32},
-         Ptr{Float64}, Ptr{Int32},
-         Ptr{Float64}, Ptr{Float64},
-         Ptr{Float64}),
-         t, &n, c, &k,
-         &Float64(a), &Float64(b), wrk)
-end
 
 _integrate(t::Vector{Float64}, c::Matrix{Float64}, k::Int,
            a::Real, b::Real) =
   vec(mapslices(v -> _integrate(t, v, k, a, b), c, [2]))
 
-integrate(spline::Spline1D, a::Real, b::Real) =
+integrate(spline::ParametricSpline, a::Real, b::Real) =
   _integrate(spline.t, spline.c, spline.k, a, b)
-
-# TODO roots for parametric splines
-# note: default maxn in scipy.interpolate is 3 * (length(spline.t) - 7)
-function roots(spline::Spline1D; maxn::Integer=8)
-    if spline.k != 3
-        error("root finding only supported for cubic splines (k=3)")
-    end
-    n = length(spline.t)
-    zeros = Vector{Float64}(maxn)
-    m = Vector{Int32}(1)
-    ier = Vector{Int32}(1)
-    ccall((:sproot_, ddierckx), Void,
-          (Ptr{Float64}, Ptr{Int32},  # t, n
-           Ptr{Float64}, Ptr{Float64},  # c, zeros
-           Ptr{Int32}, Ptr{Int32},  # mest, m
-           Ptr{Int32}),  # ier
-          spline.t, &n, spline.c, zeros,
-          &maxn, m, ier)
-
-    if ier[1] == 0
-        return zeros[1:m[1]]
-    elseif ier[1] == 1
-        warn("number of zeros exceeded maxn; only first maxn zeros returned")
-        return zeros
-    elseif ier[1] == 10
-        error("Invalid input data.")
-    else
-        error("unknown error code in sproot: $(ier[1])")
-    end
-end
-
 
 # ----------------------------------------------------------------------------
 # 2-d splines
@@ -1686,6 +1722,8 @@ end
 # call synonyms for evaluate(): @compat needed for v0.4
 @compat (spl::Spline1D)(x::Real) = evaluate(spl, x)
 @compat (spl::Spline1D)(x::AbstractVector) = evaluate(spl, x)
+@compat (spl::ParametricSpline)(x::Real) = evaluate(spl, x)
+@compat (spl::ParametricSpline)(x::AbstractVector) = evaluate(spl, x)
 @compat (spl::Spline2D)(x::Real, y::Real) = evaluate(spl, x, y)
 @compat (spl::Spline2D)(x::AbstractVector, y::AbstractVector) =
     evaluate(spl, x, y)

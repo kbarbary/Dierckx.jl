@@ -98,9 +98,12 @@ y = (x-4).^2-1
 spl = Spline1D(x, y)
 @test roots(spl) ≈ [3, 5]
 
+# -----------------------------------------------------------------------------
+# ParametricSpline
+
 u = [1., 2., 3.]
 x = [1. 2. 3.; 0. 2. 4.]
-spl = Spline1D(u, x, k=1, s=size(x, 2))
+spl = ParametricSpline(u, x, k=1, s=size(x, 2))
 
 xi = evaluate(spl, [1.0, 1.5, 2.0])
 @test xi ≈ [1.0 1.5 2.0; 0.0 1.0 2.0]
@@ -120,7 +123,7 @@ knots[1] = 1000.
 # test periodic
 x = [23. 24. 25. 25. 24. 23.;
      13. 12. 12. 13. 13. 13.]
-spl = Spline1D(x, periodic=true)
+spl = ParametricSpline(x, periodic=true)
 @test evaluate(spl, 0) ≈ evaluate(spl, 1)
 @test derivative(spl, 0) ≈ derivative(spl, 1)
 @test derivative(spl, 0, nu=2) ≈ derivative(spl, 1, nu=2)
@@ -133,28 +136,28 @@ up = linspace(-8.0, 13.0, 100)
 up_zeros = Float64[(0. <= ui <= 4.) ? ui : 0.0 for ui in up]
 up_clip = Float64[(0. <= ui <= 4.) ? ui : (ui<0.0)? 0.0 : 4. for ui in up]
 
-spl = Spline1D(u, x)
+spl = ParametricSpline(u, x)
 t = get_knots(spl)[2: end-1]  # knots, excluding those at endpoints
-spl2 = Spline1D(u, x, t)
+spl2 = ParametricSpline(u, x, t)
 
 @test evaluate(spl, up) ≈ [up_clip'.^2; up_clip'.^3]
 @test evaluate(spl2, up) ≈ [up_clip'.^2; up_clip'.^3]
 
 # test other bc's
-spl = Spline1D(u, x; bc="extrapolate")
+spl = ParametricSpline(u, x; bc="extrapolate")
 @test evaluate(spl, up) ≈ [up'.^2; up'.^3]
-spl = Spline1D(u, x; bc="zero")
+spl = ParametricSpline(u, x; bc="zero")
 @test evaluate(spl, up) ≈ [up_zeros'.^2; up_zeros'.^3]
-spl = Spline1D(u, x; bc="error")
+spl = ParametricSpline(u, x; bc="error")
 @test_throws ErrorException evaluate(spl, up)
 
 # test unknown bc
-@test_throws ErrorException Spline1D(u, x; bc="unknown")
+@test_throws ErrorException ParametricSpline(u, x; bc="unknown")
 
 # test derivative
 u = linspace(0, 1, 70)
 x = [u'.^2; u'.^3]
-spl = Spline1D(u, x)
+spl = ParametricSpline(u, x)
 ut = [0.3, 0.4, 0.5]
 @test derivative(spl, 0.3) ≈ [2*0.3, 3*0.3^2]
 @test derivative(spl, ut) ≈ [2*ut'; 3*ut'.^2]
@@ -164,7 +167,7 @@ ut = [0.3, 0.4, 0.5]
 # test integral
 u = linspace(0, 10, 70)
 x = [u'.^2; u'.^3]
-spl = Spline1D(u, x)
+spl = ParametricSpline(u, x)
 @test integrate(spl, 1.0, 5.0) ≈ [5.^3/3 - 1/3, 5.^4/4 - 1/4]
 
 # -----------------------------------------------------------------------------
