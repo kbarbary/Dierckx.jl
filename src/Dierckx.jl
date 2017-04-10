@@ -257,8 +257,12 @@ function Spline1D(x::AbstractVector, y::AbstractVector,
     return Spline1D(t, c, k, _translate_bc(bc), fp[])
 end
 
-function _evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                   x::Vector{Float64}; bc::Int=0)
+# TODO: deprecate this?
+_evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int, x; bc::Int=0) =
+    __evaluate(t, c, k, x, bc)
+
+function __evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
+                   x::Vector{Float64}, bc::Int=0)
     bc in (0, 1, 2, 3) || error("bc = $bc not in (0, 1, 2, 3)")
     m = length(x)
     xin = convert(Vector{Float64}, x)
@@ -275,8 +279,8 @@ function _evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
     return y
 end
 
-function _evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                   x::Real; bc::Int=0)
+function __evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
+                   x::Real, bc::Int=0)
     bc in (0, 1, 2, 3) || error("bc = $bc not in (0, 1, 2, 3)")
     y = Ref{Float64}(0)
     ier = Ref{Int32}(0)
@@ -293,14 +297,21 @@ end
 
 function evaluate(spline::Spline1D, x::AbstractVector)
     xin = convert(Vector{Float64}, x)
-    _evaluate(spline.t, spline.c, spline.k, xin, bc=spline.bc)
+    __evaluate(spline.t, spline.c, spline.k, xin, spline.bc)
 end
 
 evaluate(spline::Spline1D, x::Real) =
-    _evaluate(spline.t, spline.c, spline.k, x, bc=spline.bc)
+    __evaluate(spline.t, spline.c, spline.k, x, spline.bc)
 
-function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                     x::Vector{Float64}; nu::Int=1, bc::Int=0)
+
+# TODO: deprecate this?
+_derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int, x;
+            nu::Int=1, bc::Int=0) =
+    __derivative(t, c, k, x, nu, bc)
+
+
+function __derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
+                     x::Vector{Float64}, nu::Int=1, bc::Int=0)
     (1 <= nu <= k) || error("order of derivative must be positive and less than or equal to spline order")
     m = length(x)
     n = length(t)
@@ -318,8 +329,8 @@ function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
     return y
 end
 
-function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                     x::Real; nu::Int=1, bc::Int=0)
+function __derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
+                     x::Real, nu::Int=1, bc::Int=0)
     (1 <= nu <= k) || error("order of derivative must be positive and less than or equal to spline order")
     n = length(t)
     wrk = Vector{Float64}(n)
@@ -340,13 +351,18 @@ end
 #       or should it be integrated with evaluate, above?
 #       (problem with that: derivative doesn't accept bc="nearest")
 # TODO: should `nu` be `d`?
-function derivative(spline::Spline1D, x::AbstractVector; nu::Int=1)
+function derivative(spline::Spline1D, x::AbstractVector, nu::Int=1)
     xin = convert(Vector{Float64}, x)
-    _derivative(spline.t, spline.c, spline.k, xin; nu=nu, bc=spline.bc)
+    __derivative(spline.t, spline.c, spline.k, xin, nu, spline.bc)
 end
 
-derivative(spline::Spline1D, x::Real; nu::Int=1) =
-    _derivative(spline.t, spline.c, spline.k, x; nu=nu, bc=spline.bc)
+derivative(spline::Spline1D, x::Real, nu::Int=1) =
+    __derivative(spline.t, spline.c, spline.k, x, nu, spline.bc)
+
+
+# TODO: deprecate this?
+derivative(spline::Spline1D, x; nu::Int=1) = derivative(spline, x, nu)
+
 
 function _integrate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
                     a::Real, b::Real)
