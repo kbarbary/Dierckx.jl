@@ -869,7 +869,7 @@ integrate(spline::ParametricSpline, a::Real, b::Real) =
 # 2-d splines
 
 # NOTE REGARDING ARGUMENT ORDER: In the "grid" version of the Spline2D
-# constructor and evaluators, the fortran functions expects z to have
+# constructor and evaluators, the fortran functions expect z to have
 # shape (my, mx), but we'd rather have x be the fast axis in z.  So,
 # in the ccall()s in these methods, all the x and y related inputs are
 # swapped with regard to what the Fortran documentation says.
@@ -1254,7 +1254,7 @@ function evalgrid(spline::Spline2D, x::AbstractVector, y::AbstractVector)
 
     ier[1] == 0 || error(_eval2d_message)
 
-    return z
+    return z.'
 end
 
 # 2D integration
