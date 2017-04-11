@@ -93,6 +93,9 @@ z = [1. 2. 1. 2.;  # size is (length(x), length(y))
 spline = Spline2D(x, y, z)
 ```
 
+*Note that if you consider `z` as a matrix, `x` refers to row
+ coordinates and `y` refers to column coordinates.*
+
 Evaluate at element-wise points:
 
 ```julia
@@ -191,8 +194,10 @@ Spline2D(x, y, z; kx=3, ky=3, s=0.0)
   `(x[i], y[i])`. In this case, the lengths of all inputs must match.
 
   If `z` is a 2-d array, the data are assumed to be gridded: `z[i, j]`
-  is the function value at `(x[i], y[j])`. In this case, it is required
-  that `size(z) == (length(x), length(y))`.
+  is the function value at `(x[i], y[j])`. In this case, it is
+  required that `size(z) == (length(x), length(y))`. (Note that when
+  interpreting `z` as a matrix, `x` gives the row coordinates and `y`
+  gives the column coordinates.)
 
 ```julia
 evaluate(spl, x, y)
@@ -207,8 +212,12 @@ evalgrid(spl, x, y)
 ```
 
 - Evaluate the 2-d spline `spl` at the grid points spanned by the
-  coordinate arrays `x` and `y`. The input arrays must be monotonically
-  increasing.
+  coordinate arrays `x` and `y`. The input arrays must be
+  monotonically increasing. The output is a 2-d array with size
+  `(length(x), length(y))`: `output[i, j]` is the function value at
+  `(x[i], y[j])`. In other words, when interpreting the result as a
+  matrix, `x` gives the row coordinates and `y` gives the column
+  coordinates.
 
 - integral of a 2-d spline over the domain `[x0, x1]*[y0, y1]`
 
