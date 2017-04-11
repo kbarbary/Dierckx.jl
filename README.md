@@ -24,6 +24,7 @@ of overlapping functionality.
 - Fit and evaluate 2-d splines at unstructured points.
 - Fit "smooth" (non-interpolating) splines with adjustable smoothing factor s.
 - Derivatives, integrals and roots of 1-d splines.
+- Parametric B-splines.
 
 
 Install
@@ -180,6 +181,34 @@ roots(spl; maxn=8)
   the number returned.
 
 
+### Parametric Splines
+
+These are the B-spline representation of a curve through N-dimensional space.
+
+```julia
+ParametricSpline(X; s=0.0, ...)
+ParametricSpline(u, X; s=0.0, ...)
+ParametricSpline(X, knots, ...)
+ParametricSpline(u, X, knots, ...)
+```
+
+- `X` is a 2-d array with size `(N, m)`: `N` is the number of dimensions
+  of the space (must be between 1 and 10) and `m` is the number of points.
+  `X[:, i]` gives the coordinates of the `i`th point.
+
+- `u` is a 1-d array giving parameter values at each of the `m` points. If not
+  given, values are calculated automatically.
+
+- `knots` is a 1-d array giving user-specified knots, if desired.
+
+Keyword arguemnts common to all constructor methods:
+
+- `w`: weight applied to each point (length `m` 1-d array).
+- `k`: Spline order (between 1 and 5; default 3).
+- `bc`: Boundary condition (default `'nearest'`).
+- `periodic`: Treat curve as periodic? (Default is `false`).
+
+
 ### 2-d Splines
 
 ```julia
@@ -246,6 +275,15 @@ equivalent of a specific classes in scipy.interpolate:
 | SmoothSphereBivariateSpline  |                                            |
 | LSQSphereBivariateSpline     |                                            |
 | RectSphereBivariateSpline    |                                            |
+
+Parametric splines:
+
+| scipy.interpolate function   | Dierckx.jl constructor method              |
+| ---------------------------- | ------------------------------------------ |
+| `splprep(X)`                 | `ParametricSpline(X)`                      |
+| `splprep(X, u=...)`          | `ParametricSpline(u, X)`                   |
+| `splprep(X, t=...)`          | `ParametricSpline(X, t)`  (t = knots)      |
+| `splprep(X, u=..., t=...)`   | `ParametricSpline(u, X, t)`                |
 
 
 License

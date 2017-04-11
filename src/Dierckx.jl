@@ -640,7 +640,6 @@ function ParametricSpline(x::AbstractMatrix, knots::AbstractVector;
                           w::AbstractVector=ones(size(x, 2)),
                           k::Int=3, bc::AbstractString="nearest",
                           periodic::Bool=false)
-                          idim, m = size(x)
     idim, m = size(x)
     if periodic
         if x[:, 1] != x[:, end]
