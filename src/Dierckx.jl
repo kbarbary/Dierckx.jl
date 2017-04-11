@@ -311,11 +311,11 @@ _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int, x;
 
 
 function __derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                     x::Vector{Float64}, nu::Int=1, bc::Int=0)
+                     x::Vector{Float64}, nu::Int=1, bc::Int=0,
+                     wrk::Vector{Float64} = Vector{Float64}(length(t)))
     (1 <= nu <= k) || error("order of derivative must be positive and less than or equal to spline order")
     m = length(x)
     n = length(t)
-    wrk = Vector{Float64}(n)
     y = Vector{Float64}(m)
     ier = Ref{Int32}(0)
     ccall((:splder_, ddierckx), Void,
@@ -330,10 +330,10 @@ function __derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
 end
 
 function __derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                     x::Real, nu::Int=1, bc::Int=0)
+                     x::Real, nu::Int=1, bc::Int=0,
+                     wrk::Vector{Float64} = Vector{Float64}(length(t)))
     (1 <= nu <= k) || error("order of derivative must be positive and less than or equal to spline order")
     n = length(t)
-    wrk = Vector{Float64}(n)
     y = Ref{Float64}(0)
     ier = Ref{Int32}(0)
     ccall((:splder_, ddierckx), Void,
