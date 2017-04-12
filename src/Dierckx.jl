@@ -412,7 +412,11 @@ type ParametricSpline
     k::Int
     bc::Int
     fp::Float64
+    wrk::Vector{Float64}
 end
+
+ParametricSpline(t, c, k, bc, fp) =
+    ParametricSpline(t, c, k, bc, fp, Vector{Float64}(length(t)))
 
 get_knots(spl::ParametricSpline) = spl.t[spl.k+1:end-spl.k]
 get_coeffs(spl::ParametricSpline) = spl.c[:, 1:end-spl.k+1]
@@ -852,26 +856,29 @@ evaluate(spline::ParametricSpline, x::Real) =
     _evaluate(spline.t, spline.c, spline.k, x, spline.bc)
 
 _derivative(t::Vector{Float64}, c::Matrix{Float64}, k::Int,
-            x::Vector{Float64}, nu::Int, bc::Int) =
-    mapslices(v -> _derivative(t, v, k, x, nu, bc), c, [2])
+            x::Vector{Float64}, nu::Int, bc::Int, wrk::Vector{Float64}) =
+    mapslices(v -> _derivative(t, v, k, x, nu, bc, wrk), c, [2])
 
 _derivative(t::Vector{Float64}, c::Matrix{Float64}, k::Int,
-            x::Real, nu::Int, bc::Int) =
-    vec(mapslices(v -> _derivative(t, v, k, x, nu, bc), c, [2]))
+            x::Real, nu::Int, bc::Int, wrk::Vector{Float64}) =
+    vec(mapslices(v -> _derivative(t, v, k, x, nu, bc, wrk), c, [2]))
 
-derivative(spline::ParametricSpline, x::AbstractVector; nu::Int=1) =
+derivative(spline::ParametricSpline, x::AbstractVector, nu::Int=1) =
     _derivative(spline.t, spline.c, spline.k,
-                convert(Vector{Float64}, x), nu, spline.bc)
+                convert(Vector{Float64}, x), nu, spline.bc, spline.wrk)
 
-derivative(spline::ParametricSpline, x::Real; nu::Int=1) =
-    _derivative(spline.t, spline.c, spline.k, x, nu, spline.bc)
+# TODO: deprecate this
+derivative(spline::ParametricSpline, x; nu::Int=1) = derivative(spline, x, nu)
+
+derivative(spline::ParametricSpline, x::Real, nu::Int=1) =
+    _derivative(spline.t, spline.c, spline.k, x, nu, spline.bc, spline.wrk)
 
 _integrate(t::Vector{Float64}, c::Matrix{Float64}, k::Int,
-           a::Real, b::Real) =
-    vec(mapslices(v -> _integrate(t, v, k, a, b), c, [2]))
+           a::Real, b::Real, wrk::Vector{Float64}) =
+    vec(mapslices(v -> _integrate(t, v, k, a, b, wrk), c, [2]))
 
 integrate(spline::ParametricSpline, a::Real, b::Real) =
-    _integrate(spline.t, spline.c, spline.k, a, b)
+    _integrate(spline.t, spline.c, spline.k, a, b, spline.wrk)
 
 # ----------------------------------------------------------------------------
 # 2-d splines
