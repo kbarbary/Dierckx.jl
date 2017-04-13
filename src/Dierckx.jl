@@ -82,7 +82,11 @@ type Spline1D
     k::Int
     bc::Int
     fp::Float64
+    wrk::Vector{Float64}
 end
+
+# add a constructor that automatically creates the `work` array
+Spline1D(t, c, k, bc, fp) = Spline1D(t, c, k, bc, fp, Vector{Float64}(length(t)))
 
 get_knots(spl::Spline1D) = spl.t[spl.k+1:end-spl.k]
 get_coeffs(spl::Spline1D) = spl.c[1:end-spl.k+1]
@@ -303,11 +307,10 @@ evaluate(spline::Spline1D, x::Real) =
 
 
 function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                     x::Vector{Float64}, nu::Int, bc::Int)
+                     x::Vector{Float64}, nu::Int, bc::Int, wrk::Vector{Float64})
     (1 <= nu <= k) || error("order of derivative must be positive and less than or equal to spline order")
     m = length(x)
     n = length(t)
-    wrk = Vector{Float64}(n)
     y = Vector{Float64}(m)
     ier = Ref{Int32}(0)
     ccall((:splder_, ddierckx), Void,
@@ -322,10 +325,9 @@ function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
 end
 
 function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                     x::Real, nu::Int, bc::Int)
+                     x::Real, nu::Int, bc::Int, wrk::Vector{Float64})
     (1 <= nu <= k) || error("order of derivative must be positive and less than or equal to spline order")
     n = length(t)
-    wrk = Vector{Float64}(n)
     y = Ref{Float64}(0)
     ier = Ref{Int32}(0)
     ccall((:splder_, ddierckx), Void,
@@ -345,11 +347,11 @@ end
 # TODO: should `nu` be `d`?
 derivative(spline::Spline1D, x::AbstractVector, nu::Int=1) =
     _derivative(spline.t, spline.c, spline.k,
-                convert(Vector{Float64}, x), nu, spline.bc)
+                convert(Vector{Float64}, x), nu, spline.bc, spline.wrk)
 
 
 derivative(spline::Spline1D, x::Real, nu::Int=1) =
-    _derivative(spline.t, spline.c, spline.k, x, nu, spline.bc)
+    _derivative(spline.t, spline.c, spline.k, x, nu, spline.bc, spline.wrk)
 
 
 # TODO: deprecate this?
@@ -357,9 +359,8 @@ derivative(spline::Spline1D, x; nu::Int=1) = derivative(spline, x, nu)
 
 
 function _integrate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
-                    a::Real, b::Real)
+                    a::Real, b::Real, wrk::Vector{Float64})
     n = length(t)
-    wrk = Vector{Float64}(n)
     ccall((:splint_, ddierckx), Float64,
         (Ptr{Float64}, Ptr{Int32},
          Ptr{Float64}, Ptr{Int32},
@@ -370,7 +371,7 @@ function _integrate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
 end
 
 integrate(spline::Spline1D, a::Real, b::Real) =
-    _integrate(spline.t, spline.c, spline.k, a, b)
+    _integrate(spline.t, spline.c, spline.k, a, b, spline.wrk)
 
 # TODO roots for parametric splines
 # note: default maxn in scipy.interpolate is 3 * (length(spline.t) - 7)
@@ -411,7 +412,11 @@ type ParametricSpline
     k::Int
     bc::Int
     fp::Float64
+    wrk::Vector{Float64}
 end
+
+ParametricSpline(t, c, k, bc, fp) =
+    ParametricSpline(t, c, k, bc, fp, Vector{Float64}(length(t)))
 
 get_knots(spl::ParametricSpline) = spl.t[spl.k+1:end-spl.k]
 get_coeffs(spl::ParametricSpline) = spl.c[:, 1:end-spl.k+1]
@@ -851,26 +856,29 @@ evaluate(spline::ParametricSpline, x::Real) =
     _evaluate(spline.t, spline.c, spline.k, x, spline.bc)
 
 _derivative(t::Vector{Float64}, c::Matrix{Float64}, k::Int,
-            x::Vector{Float64}, nu::Int, bc::Int) =
-    mapslices(v -> _derivative(t, v, k, x, nu, bc), c, [2])
+            x::Vector{Float64}, nu::Int, bc::Int, wrk::Vector{Float64}) =
+    mapslices(v -> _derivative(t, v, k, x, nu, bc, wrk), c, [2])
 
 _derivative(t::Vector{Float64}, c::Matrix{Float64}, k::Int,
-            x::Real, nu::Int, bc::Int) =
-    vec(mapslices(v -> _derivative(t, v, k, x, nu, bc), c, [2]))
+            x::Real, nu::Int, bc::Int, wrk::Vector{Float64}) =
+    vec(mapslices(v -> _derivative(t, v, k, x, nu, bc, wrk), c, [2]))
 
-derivative(spline::ParametricSpline, x::AbstractVector; nu::Int=1) =
+derivative(spline::ParametricSpline, x::AbstractVector, nu::Int=1) =
     _derivative(spline.t, spline.c, spline.k,
-                convert(Vector{Float64}, x), nu, spline.bc)
+                convert(Vector{Float64}, x), nu, spline.bc, spline.wrk)
 
-derivative(spline::ParametricSpline, x::Real; nu::Int=1) =
-    _derivative(spline.t, spline.c, spline.k, x, nu, spline.bc)
+# TODO: deprecate this
+derivative(spline::ParametricSpline, x; nu::Int=1) = derivative(spline, x, nu)
+
+derivative(spline::ParametricSpline, x::Real, nu::Int=1) =
+    _derivative(spline.t, spline.c, spline.k, x, nu, spline.bc, spline.wrk)
 
 _integrate(t::Vector{Float64}, c::Matrix{Float64}, k::Int,
-           a::Real, b::Real) =
-    vec(mapslices(v -> _integrate(t, v, k, a, b), c, [2]))
+           a::Real, b::Real, wrk::Vector{Float64}) =
+    vec(mapslices(v -> _integrate(t, v, k, a, b, wrk), c, [2]))
 
 integrate(spline::ParametricSpline, a::Real, b::Real) =
-    _integrate(spline.t, spline.c, spline.k, a, b)
+    _integrate(spline.t, spline.c, spline.k, a, b, spline.wrk)
 
 # ----------------------------------------------------------------------------
 # 2-d splines
