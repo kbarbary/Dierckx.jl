@@ -430,101 +430,7 @@ function ParametricSpline(x::AbstractMatrix;
                           w::AbstractVector=ones(size(x, 2)),
                           k::Int=3, s::Real=0.0, bc::AbstractString="nearest",
                           periodic::Bool=false)
-    idim, m = size(x)
-    if periodic
-      if x[:, 1] != x[:, end]
-        warn("setting x[:, 1] = x[:, end]")
-        x[:, end] = x[:, 1]
-      end
-    end
-
-    length(w) == m || error("number of data points and length of w must match")
-    0 < idim < 11 || error("number of dimension must be between 1 and 10")
-    m > k || error("number of data points muct be greater than k")
-    1 <= k <= 5 || error("1 <= k = $k <= 5 must hold")
-
-    # ensure inputs are of correct type
-    xin = convert(Matrix{Float64}, x)
-    win = convert(Vector{Float64}, w)
-
-    # outputs
-    nest = m + 2k
-    if s == 0
-        nest = periodic ? m + 2k : m + k + 1
-    end
-    nest = max(nest, 2k + 3)
-
-    u = Vector{Float64}(size(x, 2))
-    n = Ref{Int32}(0)
-    t = Vector{Float64}(nest)
-    c = Vector{Float64}(idim*nest)
-    fp = Ref{Float64}(0)
-    ier = Ref{Int32}(0)
-
-    # working space
-    lwrk = 0
-    if periodic
-        lwrk = m*(k + 1) + nest*(7 + idim + 5k)
-    else
-        lwrk = m*(k + 1) + nest*(6 + idim + 3k)
-    end
-    wrk = Vector{Float64}(lwrk)
-    iwrk = Vector{Int32}(nest)
-
-    if !periodic
-        ccall((:parcur_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32}, # iopt, ipar
-             Ptr{Int32}, Ptr{Int32}, # idim, m
-             Ptr{Float64}, Ptr{Int32}, # u, mx
-             Ptr{Float64}, Ptr{Float64}, # x, w
-             Ptr{Float64}, Ptr{Float64}, # ub, ue
-             Ptr{Int32}, Ptr{Float64}, # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Int32}, # t, nc
-             Ptr{Float64}, Ptr{Float64}, # c, fp
-             Ptr{Float64}, Ptr{Int32}, # wrk, lwrk
-             Ptr{Int32}, Ptr{Int32}), #iwrk, ier
-            &0, &0,
-            &idim, &m,
-            u, &length(x),
-            xin, win,
-            &0, &1,
-            &k, &Float64(s),
-            &nest, n,
-            t, &length(c),
-            c, fp,
-            wrk, &lwrk,
-            iwrk, ier)
-    else
-        ccall((:clocur_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32}, # iopt, ipar
-             Ptr{Int32}, Ptr{Int32}, # idim, m
-             Ptr{Float64}, Ptr{Int32}, # u, mx
-             Ptr{Float64}, Ptr{Float64}, # x, w
-             Ptr{Int32}, Ptr{Float64}, # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Int32}, # t, nc
-             Ptr{Float64}, Ptr{Float64}, # c, fp
-             Ptr{Float64}, Ptr{Int32}, # wrk, lwrk
-             Ptr{Int32}, Ptr{Int32}), #iwrk, ier
-            &0, &0,
-            &idim, &m,
-            u, &length(x),
-            xin, win,
-            &k, &Float64(s),
-            &nest, n,
-            t, &length(c),
-            c, fp,
-            wrk, &lwrk,
-            iwrk, ier)
-    end
-
-    ier[] <= 0 || error(_fit1d_messages[ier[]])
-
-    resize!(t, n[])
-    c = [c[n[]*(j-1) + i] for j=1:idim, i=1:n[]-k-1]
-
-    return ParametricSpline(t, c, k, _translate_bc(bc), fp[])
+    return _ParametricSpline(nothing, x, nothing, w, k, s, bc, periodic)
 end
 
 # version with user-supplied u
@@ -533,44 +439,81 @@ function ParametricSpline(u::AbstractVector, x::AbstractMatrix;
                           w::AbstractVector=ones(size(x, 2)),
                           k::Int=3, s::Real=0.0, bc::AbstractString="nearest",
                           periodic::Bool=false)
+    return _ParametricSpline(u, x, nothing, w, k, s, bc, periodic)
+end
+
+# version with user-supplied knots
+function ParametricSpline(x::AbstractMatrix, knots::AbstractVector;
+                          w::AbstractVector=ones(size(x, 2)),
+                          k::Int=3, bc::AbstractString="nearest",
+                          periodic::Bool=false)
+    return _ParametricSpline(nothing, x, knots, w, k, -1.0, bc, periodic)
+end
+
+# version with user-supplied u and knots
+function ParametricSpline(u::AbstractVector, x::AbstractMatrix,
+                          knots::AbstractVector;
+                          w::AbstractVector=ones(size(x, 2)),
+                          k::Int=3, bc::AbstractString="nearest",
+                          periodic::Bool=false)
+    return _ParametricSpline(u, x, knots, w, k, -1.0, bc, periodic)
+end
+
+function _ParametricSpline(u::Union{AbstractVector, Void}, x::AbstractMatrix,
+                           knots::Union{AbstractVector, Void},
+                           w::AbstractVector, k::Int, s::Real,
+                           bc::AbstractString, periodic::Bool)
     idim, m = size(x)
     if periodic
-        if x[:, 1] != x[:, end]
-            warn("setting x[:, 1] = x[:, end]")
-            x[:, end] = x[:, 1]
-        end
+        x[:, 1] == x[:, end] || error("for periodic splines x[:,1] and x[:,end] must match")
     end
 
-    length(w) == m || error("size(x, 2) and length(w) must match")
-    0 < idim < 11 || error("size(x, 2) must be between 1 and 10")
-    m > k || error("k must be less than size(x, 2)")
+    length(w) == m || error("number of data points and length of w must match")
+    0 < idim < 11 || error("number of dimension must be between 1 and 10")
+    m > k || error("number of data points muct be greater than k")
     1 <= k <= 5 || error("1 <= k = $k <= 5 must hold")
-    ub <= u[1] || error("ub must be less than or equal to u[1]")
-    ue >= u[end] || error("ue must be greater than or equal to u[end]")
-    for i=1:length(u)-1
-        u[i] < u[i+1] || error("u[i] must be strictly increasing")
+
+    local ipar, uin, ub, ue
+    if u != nothing
+        all(u[1:end-1] .< u[2:end]) || error("u[i] must be strictly increasing")
+        ipar = 1
+        uin = convert(Vector{Float64}, u)
+        ub = uin[1]
+        ue = uin[end]
+    else
+        ipar = 0
+        uin = Vector{Float64}(size(x, 2))
+        ub = 0.0
+        ue = 1.0
     end
 
-    # ensure inputs are of correct type
+    local iopt, nest::Int, t
+    if knots != nothing
+        length(knots) <= m + k + 1 || error("length(knots) <= length(x) + k + 1 must hold")
+        first(x) < first(knots) || error("first(x) < first(knots) must hold")
+        last(x) > last(knots) || error("last(x) > last(knots) must hold")
+        iopt = -1
+        nest = length(knots) + 2(k + 1)
+        t = Vector{Float64}(nest)
+        t[k+2:end-k-1] = knots
+    else
+        iopt = 0
+        nest = m + 2k
+        if s == 0
+            nest = periodic ? m + 2k : m + k + 1
+        end
+        nest = max(nest, 2k + 3)
+        t = Vector{Float64}(nest)
+    end
+
     xin = convert(Matrix{Float64}, x)
-    uin = convert(Vector{Float64}, u)
     win = convert(Vector{Float64}, w)
-
-    # outputs
-    nest = m + 2k
-    if s == 0
-        nest = periodic ? m + 2k : m + k + 1
-    end
-    nest = max(nest, 2k + 3)
-
-    n = Ref{Int32}(0)
-    t = Vector{Float64}(nest)
+    n = Ref{Int32}(nest)
     c = Vector{Float64}(idim*nest)
     fp = Ref{Float64}(0)
     ier = Ref{Int32}(0)
 
-    # working space
-    lwrk = 0
+    local lwrk::Int
     if periodic
         lwrk = m*(k + 1) + nest*(7 + idim + 5k)
     else
@@ -581,45 +524,45 @@ function ParametricSpline(u::AbstractVector, x::AbstractMatrix;
 
     if !periodic
         ccall((:parcur_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32}, # iopt, ipar
-             Ptr{Int32}, Ptr{Int32}, # idim, m
-             Ptr{Float64}, Ptr{Int32}, # u, mx
-             Ptr{Float64}, Ptr{Float64}, # x, w
-             Ptr{Float64}, Ptr{Float64}, # ub, ue
-             Ptr{Int32}, Ptr{Float64}, # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Int32}, # t, nc
-             Ptr{Float64}, Ptr{Float64}, # c, fp
-             Ptr{Float64}, Ptr{Int32}, # wrk, lwrk
-             Ptr{Int32}, Ptr{Int32}), #iwrk, ier
-            &0, &1,
-            &idim, &m,
-            uin, &length(x),
-            xin, win,
-            &ub, &ue,
-            &k, &Float64(s),
-            &nest, n,
-            t, &length(c),
-            c, fp,
-            wrk, &lwrk,
-            iwrk, ier)
-    else
-        ccall((:clocur_, ddierckx), Void,
               (Ptr{Int32}, Ptr{Int32}, # iopt, ipar
-               Ptr{Int32}, Ptr{Int32}, # idim, m
-               Ptr{Float64}, Ptr{Int32}, # u, mx
-               Ptr{Float64}, Ptr{Float64}, # x, w
-               Ptr{Int32}, Ptr{Float64}, # k, s
-               Ptr{Int32}, Ptr{Int32}, # nest, n
-               Ptr{Float64}, Ptr{Int32}, # t, nc
-               Ptr{Float64}, Ptr{Float64}, # c, fp
-               Ptr{Float64}, Ptr{Int32}, # wrk, lwrk
-               Ptr{Int32}, Ptr{Int32}), #iwrk, ier
-              &0, &1,
+              Ptr{Int32}, Ptr{Int32}, # idim, m
+              Ptr{Float64}, Ptr{Int32}, # u, mx
+              Ptr{Float64}, Ptr{Float64}, # x, w
+              Ptr{Float64}, Ptr{Float64}, # ub, ue
+              Ptr{Int32}, Ptr{Float64}, # k, s
+              Ptr{Int32}, Ptr{Int32}, # nest, n
+              Ptr{Float64}, Ptr{Int32}, # t, nc
+              Ptr{Float64}, Ptr{Float64}, # c, fp
+              Ptr{Float64}, Ptr{Int32}, # wrk, lwrk
+              Ptr{Int32}, Ptr{Int32}), #iwrk, ier
+              &iopt, &ipar,
               &idim, &m,
               uin, &length(x),
               xin, win,
-              &k, &Float64(s),
+              &ub, &ue,
+              &k, &s,
+              &nest, n,
+              t, &length(c),
+              c, fp,
+              wrk, &lwrk,
+              iwrk, ier)
+    else
+        ccall((:clocur_, ddierckx), Void,
+              (Ptr{Int32}, Ptr{Int32}, # iopt, ipar
+              Ptr{Int32}, Ptr{Int32}, # idim, m
+              Ptr{Float64}, Ptr{Int32}, # u, mx
+              Ptr{Float64}, Ptr{Float64}, # x, w
+              Ptr{Int32}, Ptr{Float64}, # k, s
+              Ptr{Int32}, Ptr{Int32}, # nest, n
+              Ptr{Float64}, Ptr{Int32}, # t, nc
+              Ptr{Float64}, Ptr{Float64}, # c, fp
+              Ptr{Float64}, Ptr{Int32}, # wrk, lwrk
+              Ptr{Int32}, Ptr{Int32}), #iwrk, ier
+              &iopt, &ipar,
+              &idim, &m,
+              uin, &length(x),
+              xin, win,
+              &k, &s,
               &nest, n,
               t, &length(c),
               c, fp,
@@ -631,209 +574,6 @@ function ParametricSpline(u::AbstractVector, x::AbstractMatrix;
 
     resize!(t, n[])
     c = [c[n[]*(j-1) + i] for j=1:idim, i=1:n[]-k-1]
-
-    return ParametricSpline(t, c, k, _translate_bc(bc), fp[])
-end
-
-# version with user-supplied knots
-function ParametricSpline(x::AbstractMatrix, knots::AbstractVector;
-                          w::AbstractVector=ones(size(x, 2)),
-                          k::Int=3, bc::AbstractString="nearest",
-                          periodic::Bool=false)
-    idim, m = size(x)
-    if periodic
-        if x[:, 1] != x[:, end]
-            warn("setting x[:, 1] = x[:, end]")
-            x[:, end] = x[:, 1]
-        end
-    end
-
-    length(w) == m || error("number of data points and length of w must match")
-    0 < idim < 11 || error("number of dimension must be between 1 and 10")
-    m > k || error("number of data points muct be greater than k")
-    1 <= k <= 5 || error("1 <= k = $k <= 5 must hold")
-    length(knots) <= m + k + 1 || error("length(knots) <= length(x) + k + 1 must hold")
-    first(x) < first(knots) || error("first(x) < first(knots) must hold")
-    last(x) > last(knots) || error("last(x) > last(knots) must hold")
-
-    # ensure inputs are of correct type
-    xin = convert(Matrix{Float64}, x)
-    win = convert(Vector{Float64}, w)
-
-    # k + 1 knots will be added on either end of the interior knots
-    u = Vector{Float64}(size(x, 2))
-    n = length(knots) + 2(k + 1)
-    t = Vector{Float64}(n)
-    t[k+2:end-k-1] = knots
-    c = Vector{Float64}(idim*n)
-    fp = Ref{Float64}(0)
-    ier = Ref{Int32}(0)
-
-    lwrk  = 0
-    if periodic
-        lwrk = m*(k + 1) + n*(7 + idim + 5k)
-    else
-        lwrk = m*(k + 1) + n*(6 + idim + 3k)
-    end
-    wrk = Vector{Float64}(lwrk)
-    iwrk = Vector{Int32}(n)
-
-    if !periodic
-        ccall((:parcur_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32}, # iopt, ipar
-             Ptr{Int32}, Ptr{Int32}, # idim, m
-             Ptr{Float64}, Ptr{Int32}, # u, mx
-             Ptr{Float64}, Ptr{Float64}, # x, w
-             Ptr{Float64}, Ptr{Float64}, # ub, ue
-             Ptr{Int32}, Ptr{Float64}, # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Int32}, # t, nc
-             Ptr{Float64}, Ptr{Float64}, # c, fp
-             Ptr{Float64}, Ptr{Int32}, # wrk, lwrk
-             Ptr{Int32}, Ptr{Int32}), #iwrk, ier
-            &(-1), &0,
-            &idim, &m,
-            u, &length(x),
-            xin, win,
-            &0, &1,
-            &k, &(-1.0),
-            &n, &n,
-            t, &length(c),
-            c, fp,
-            wrk, &lwrk,
-            iwrk, ier)
-    else
-        ccall((:clocur_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32}, # iopt, ipar
-             Ptr{Int32}, Ptr{Int32}, # idim, m
-             Ptr{Float64}, Ptr{Int32}, # u, mx
-             Ptr{Float64}, Ptr{Float64}, # x, w
-             Ptr{Int32}, Ptr{Float64}, # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Int32}, # t, nc
-             Ptr{Float64}, Ptr{Float64}, # c, fp
-             Ptr{Float64}, Ptr{Int32}, # wrk, lwrk
-             Ptr{Int32}, Ptr{Int32}), #iwrk, ier
-            &(-1), &0,
-            &idim, &m,
-            u, &length(x),
-            xin, win,
-            &k, &(-1.0),
-            &n, &n,
-            t, &length(c),
-            c, fp,
-            wrk, &lwrk,
-            iwrk, ier)
-    end
-
-    ier[] <= 0 || error(_fit1d_messages[ier[]])
-
-    c = [c[n*(j-1) + i] for j=1:idim, i=1:n-k-1]
-
-    return ParametricSpline(t, c, k, _translate_bc(bc), fp[])
-end
-
-# version with user-supplied u and knots
-function ParametricSpline(u::AbstractVector, x::AbstractMatrix,
-                          knots::AbstractVector;
-                          ub::Real=u[1], ue::Real=u[end],
-                          w::AbstractVector=ones(size(x, 2)),
-                          k::Int=3, bc::AbstractString="nearest",
-                          periodic::Bool=false)
-    idim, m = size(x)
-    if periodic
-        if x[:, 1] != x[:, end]
-            warn("setting x[:, 1] = x[:, end]")
-            x[:, end] = x[:, 1]
-        end
-    end
-
-    length(w) == m || error("number of data points and length of w must match")
-    0 < idim < 11 || error("number of dimension must be between 1 and 10")
-    m > k || error("number of data points muct be greater than k")
-    1 <= k <= 5 || error("1 <= k = $k <= 5 must hold")
-    ub <= u[1] || error("ub must be less than or equal to u[1]")
-    ue >= u[end] || error("ue must be greater than or equal to u[end]")
-    for i=1:length(u)-1
-        u[i] < u[i+1] || error("u[i] must be strictly increasing")
-    end
-    length(knots) <= m + k + 1 || error("length(knots) <= length(x) + k + 1 must hold")
-    first(x) < first(knots) || error("first(x) < first(knots) must hold")
-    last(x) > last(knots) || error("last(x) > last(knots) must hold")
-
-    # ensure inputs are of correct type
-    xin = convert(Matrix{Float64}, x)
-    uin = convert(Vector{Float64}, u)
-    win = convert(Vector{Float64}, w)
-
-    # k + 1 knots will be added on either end of the interior knots
-    n = length(knots) + 2(k + 1)
-    t = Vector{Float64}(n)
-    t[k+2:end-k-1] = knots
-    c = Vector{Float64}(idim*n)
-    fp = Ref{Float64}(0)
-    ier = Ref{Int32}(0)
-
-    lwrk  = 0
-    if periodic
-        lwrk = m*(k + 1) + n*(7 + idim + 5k)
-    else
-        lwrk = m*(k + 1) + n*(6 + idim + 3k)
-    end
-    wrk = Vector{Float64}(lwrk)
-    iwrk = Vector{Int32}(n)
-
-    if !periodic
-        ccall((:parcur_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32}, # iopt, ipar
-             Ptr{Int32}, Ptr{Int32}, # idim, m
-             Ptr{Float64}, Ptr{Int32}, # u, mx
-             Ptr{Float64}, Ptr{Float64}, # x, w
-             Ptr{Float64}, Ptr{Float64}, # ub, ue
-             Ptr{Int32}, Ptr{Float64}, # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Int32}, # t, nc
-             Ptr{Float64}, Ptr{Float64}, # c, fp
-             Ptr{Float64}, Ptr{Int32}, # wrk, lwrk
-             Ptr{Int32}, Ptr{Int32}), #iwrk, ier
-            &(-1), &1,
-            &idim, &m,
-            uin, &length(x),
-            xin, win,
-            &ub, &ue,
-            &k, &(-1.0),
-            &n, &n,
-            t, &length(c),
-            c, fp,
-            wrk, &lwrk,
-            iwrk, ier)
-    else
-        ccall((:clocur_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32}, # iopt, ipar
-             Ptr{Int32}, Ptr{Int32}, # idim, m
-             Ptr{Float64}, Ptr{Int32}, # u, mx
-             Ptr{Float64}, Ptr{Float64}, # x, w
-             Ptr{Int32}, Ptr{Float64}, # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Int32}, # t, nc
-             Ptr{Float64}, Ptr{Float64}, # c, fp
-             Ptr{Float64}, Ptr{Int32}, # wrk, lwrk
-             Ptr{Int32}, Ptr{Int32}), #iwrk, ier
-            &(-1), &1,
-            &idim, &m,
-            uin, &length(x),
-            xin, win,
-            &k, &(-1.0),
-            &n, &n,
-            t, &length(c),
-            c, fp,
-            wrk, &lwrk,
-            iwrk, ier)
-    end
-
-    ier[] <= 0 || error(_fit1d_messages[ier[]])
-
-    c = [c[n*(j-1) + i] for j=1:idim, i=1:n-k-1]
 
     return ParametricSpline(t, c, k, _translate_bc(bc), fp[])
 end
