@@ -7,6 +7,7 @@ os:
 julia:
     - 0.4
     - 0.5
+    - 0.6
     - nightly
 
 notifications:
@@ -21,13 +22,9 @@ before_install:
   - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then brew update; fi
   - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then brew install gcc; fi
 
-matrix:
-  allow_failures:
-    - os: osx # allow OS X to fail until intermittent failures can be resolved.
-
-#script:  # use the default scipt which is equivalent to the following
-#  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-#  - julia -e 'Pkg.clone(pwd()); Pkg.build("Dierckx"); Pkg.test("Dierckx"; coverage=true)'
+#matrix:
+#  allow_failures:
+#    - os: osx # allow OS X to fail until intermittent failures can be resolved.
 
 after_success:
   - julia -e 'cd(Pkg.dir("Dierckx")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
