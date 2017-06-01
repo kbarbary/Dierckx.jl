@@ -1,4 +1,4 @@
-v0.2.1 (unreleased)
+v0.2.1 (2017-06-01)
 ===================
 
 - Add `ParametricSpline` type.
