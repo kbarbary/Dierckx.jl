@@ -1,9 +1,9 @@
 using Compat
 
-if is_unix()
+if Compat.Sys.isunix()
     cd(joinpath(dirname(@__FILE__), "src", "ddierckx"))
 
-    suffix = is_apple() ? "dylib" : "so"
+    suffix = Compat.Sys.isapple() ? "dylib" : "so"
     try
        run(`make FC=ifort SUFFIX=$suffix`)
     catch

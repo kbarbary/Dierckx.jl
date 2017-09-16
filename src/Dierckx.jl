@@ -20,7 +20,7 @@ import Base: show
 
 unixpath = "../deps/src/ddierckx/libddierckx"
 winpath = "../deps/bin$(Sys.WORD_SIZE)/libddierckx"
-const ddierckx = joinpath(dirname(@__FILE__), is_unix() ? unixpath : winpath)
+const ddierckx = joinpath(dirname(@__FILE__), Compat.Sys.isunix() ? unixpath : winpath)
 
 function __init__()
     # Ensure library is available.
@@ -32,7 +32,7 @@ end
 # ----------------------------------------------------------------------------
 # 1-d splines
 
-const _fit1d_messages = @compat Dict(
+const _fit1d_messages = Dict(
 2=>
 """A theoretically impossible result was found during the iteration
 process for finding a smoothing spline with fp = s: s too small.
@@ -59,7 +59,7 @@ The schoenberg-whitney conditions: there must be a subset of data points
 xx[j] such that t[j] < xx[j] < t[j+k+1] for j=1,2,...,n-k-1""")
 
 
-const _eval1d_messages = @compat Dict(
+const _eval1d_messages = Dict(
 1=>
 """Input point out of range""",
 10=>
@@ -158,27 +158,27 @@ function Spline1D(x::AbstractVector, y::AbstractVector;
 
     if !periodic
         ccall((:curfit_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32},  # iopt, m
-             Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # x, y, w
-             Ptr{Float64}, Ptr{Float64},  # xb, xe
-             Ptr{Int32}, Ptr{Float64},  # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # t, c, fp
-             Ptr{Float64}, Ptr{Int32}, Ptr{Int32},  # wrk, lwrk, iwrk
-             Ptr{Int32}),  # ier
-            &0, &m, xin, yin, win, &xin[1], &xin[end], &k, &Float64(s),
-            &nest, n, t, c, fp, wrk, &lwrk, iwrk, ier)
+            (Ref{Int32}, Ref{Int32},  # iopt, m
+             Ref{Float64}, Ref{Float64}, Ref{Float64},  # x, y, w
+             Ref{Float64}, Ref{Float64},  # xb, xe
+             Ref{Int32}, Ref{Float64},  # k, s
+             Ref{Int32}, Ref{Int32}, # nest, n
+             Ref{Float64}, Ref{Float64}, Ref{Float64},  # t, c, fp
+             Ref{Float64}, Ref{Int32}, Ref{Int32},  # wrk, lwrk, iwrk
+             Ref{Int32}),  # ier
+            0, m, xin, yin, win, xin[1], xin[end], k, Float64(s),
+            nest, n, t, c, fp, wrk, lwrk, iwrk, ier)
     else
         ccall((:percur_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32}, # iopt, m
-             Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, # x, y, w
-             Ptr{Int32}, Ptr{Float64}, # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, # t, c, fp
-             Ptr{Float64}, Ptr{Int32}, Ptr{Int32}, # wrk, lwrk, iwrk
-             Ptr{Int32}), # ier
-            &0, &m, xin, yin, win, &k, &Float64(s), &nest, n, t, c,
-            fp, wrk, &lwrk, iwrk, ier)
+            (Ref{Int32}, Ref{Int32}, # iopt, m
+             Ref{Float64}, Ref{Float64}, Ref{Float64}, # x, y, w
+             Ref{Int32}, Ref{Float64}, # k, s
+             Ref{Int32}, Ref{Int32}, # nest, n
+             Ref{Float64}, Ref{Float64}, Ref{Float64}, # t, c, fp
+             Ref{Float64}, Ref{Int32}, Ref{Int32}, # wrk, lwrk, iwrk
+             Ref{Int32}), # ier
+            0, m, xin, yin, win, k, Float64(s), nest, n, t, c,
+            fp, wrk, lwrk, iwrk, ier)
     end
 
     ier[] <= 0 || error(_fit1d_messages[ier[]])
@@ -232,27 +232,27 @@ function Spline1D(x::AbstractVector, y::AbstractVector,
 
     if !periodic
         ccall((:curfit_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32},  # iopt, m
-             Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # x, y, w
-             Ptr{Float64}, Ptr{Float64},  # xb, xe
-             Ptr{Int32}, Ptr{Float64},  # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # t, c, fp
-             Ptr{Float64}, Ptr{Int32}, Ptr{Int32},  # wrk, lwrk, iwrk
-             Ptr{Int32}),  # ier
-            &(-1), &m, xin, yin, win, &xin[1], &xin[end], &k, &(-1.0),
-            &n, &n, t, c, fp, wrk, &lwrk, iwrk, ier)
+            (Ref{Int32}, Ref{Int32},  # iopt, m
+             Ref{Float64}, Ref{Float64}, Ref{Float64},  # x, y, w
+             Ref{Float64}, Ref{Float64},  # xb, xe
+             Ref{Int32}, Ref{Float64},  # k, s
+             Ref{Int32}, Ref{Int32}, # nest, n
+             Ref{Float64}, Ref{Float64}, Ref{Float64},  # t, c, fp
+             Ref{Float64}, Ref{Int32}, Ref{Int32},  # wrk, lwrk, iwrk
+             Ref{Int32}),  # ier
+            -1, m, xin, yin, win, xin[1], xin[end], k, -1.0,
+            n, n, t, c, fp, wrk, lwrk, iwrk, ier)
     else
         ccall((:percur_, ddierckx), Void,
-            (Ptr{Int32}, Ptr{Int32}, # iopt, m
-             Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, # x, y, w
-             Ptr{Int32}, Ptr{Float64}, # k, s
-             Ptr{Int32}, Ptr{Int32}, # nest, n
-             Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, # t, c, fp
-             Ptr{Float64}, Ptr{Int32}, Ptr{Int32}, # wrk, lwrk, iwrk
-             Ptr{Int32}), # ier
-            &(-1), &m, xin, yin, win, &k, &(-1.0), &n, &n, t, c,
-            fp, wrk, &lwrk, iwrk, ier)
+            (Ref{Int32}, Ref{Int32}, # iopt, m
+             Ref{Float64}, Ref{Float64}, Ref{Float64}, # x, y, w
+             Ref{Int32}, Ref{Float64}, # k, s
+             Ref{Int32}, Ref{Int32}, # nest, n
+             Ref{Float64}, Ref{Float64}, Ref{Float64}, # t, c, fp
+             Ref{Float64}, Ref{Int32}, Ref{Int32}, # wrk, lwrk, iwrk
+             Ref{Int32}), # ier
+            -1, m, xin, yin, win, k, -1.0, n, n, t, c,
+            fp, wrk, lwrk, iwrk, ier)
     end
 
     ier[] <= 0 || error(_fit1d_messages[ier[]])
@@ -270,11 +270,11 @@ function _evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
     y = Vector{Float64}(m)
     ier = Ref{Int32}(0)
     ccall((:splev_, ddierckx), Void,
-         (Ptr{Float64}, Ptr{Int32},
-          Ptr{Float64}, Ptr{Int32},
-          Ptr{Float64}, Ptr{Float64}, Ptr{Int32},
-          Ptr{Int32}, Ptr{Int32}),
-         t, &length(t), c, &k, xin, y, &m, &bc, ier)
+         (Ref{Float64}, Ref{Int32},
+          Ref{Float64}, Ref{Int32},
+          Ref{Float64}, Ref{Float64}, Ref{Int32},
+          Ref{Int32}, Ref{Int32}),
+         t, length(t), c, k, xin, y, m, bc, ier)
 
     ier[] == 0 || error(_eval1d_messages[ier[]])
     return y
@@ -286,11 +286,11 @@ function _evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
     y = Ref{Float64}(0)
     ier = Ref{Int32}(0)
     ccall((:splev_, ddierckx), Void,
-         (Ptr{Float64}, Ptr{Int32},
-          Ptr{Float64}, Ptr{Int32},
-          Ptr{Float64}, Ptr{Float64}, Ptr{Int32},
-          Ptr{Int32}, Ptr{Int32}),
-         t, &length(t), c, &k, &Float64(x), y, &1, &bc, ier)
+         (Ref{Float64}, Ref{Int32},
+          Ref{Float64}, Ref{Int32},
+          Ref{Float64}, Ref{Float64}, Ref{Int32},
+          Ref{Int32}, Ref{Int32}),
+         t, length(t), c, k, Float64(x), y, 1, bc, ier)
 
     ier[] == 0 || error(_eval1d_messages[ier[]])
     return y[]
@@ -314,12 +314,12 @@ function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
     y = Vector{Float64}(m)
     ier = Ref{Int32}(0)
     ccall((:splder_, ddierckx), Void,
-         (Ptr{Float64}, Ptr{Int32}, # t, n
-          Ptr{Float64}, Ptr{Int32}, # c, k
-          Ptr{Int32}, # nu
-          Ptr{Float64}, Ptr{Float64}, Ptr{Int32}, # x, y, m
-          Ptr{Int32}, Ptr{Float64}, Ptr{Int32}), # e, wrk, ier
-         t, &n, c, &k, &nu, x, y, &m, &bc, wrk, ier)
+         (Ref{Float64}, Ref{Int32}, # t, n
+          Ref{Float64}, Ref{Int32}, # c, k
+          Ref{Int32}, # nu
+          Ref{Float64}, Ref{Float64}, Ref{Int32}, # x, y, m
+          Ref{Int32}, Ref{Float64}, Ref{Int32}), # e, wrk, ier
+         t, n, c, k, nu, x, y, m, bc, wrk, ier)
     ier[] == 0 || error(_eval1d_messages[ier[]])
     return y
 end
@@ -331,12 +331,12 @@ function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
     y = Ref{Float64}(0)
     ier = Ref{Int32}(0)
     ccall((:splder_, ddierckx), Void,
-         (Ptr{Float64}, Ptr{Int32}, # t, n
-          Ptr{Float64}, Ptr{Int32}, # c, k
-          Ptr{Int32}, # nu
-          Ptr{Float64}, Ptr{Float64}, Ptr{Int32}, # x, y, m
-          Ptr{Int32}, Ptr{Float64}, Ptr{Int32}), # e, wrk, ier
-         t, &n, c, &k, &nu, &Float64(x), y, &1, &bc, wrk, ier)
+         (Ref{Float64}, Ref{Int32}, # t, n
+          Ref{Float64}, Ref{Int32}, # c, k
+          Ref{Int32}, # nu
+          Ref{Float64}, Ref{Float64}, Ref{Int32}, # x, y, m
+          Ref{Int32}, Ref{Float64}, Ref{Int32}), # e, wrk, ier
+         t, n, c, k, nu, Float64(x), y, 1, bc, wrk, ier)
     ier[] == 0 || error(_eval1d_messages[ier[]])
     return y[]
 end
@@ -362,12 +362,12 @@ function _integrate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
                     a::Real, b::Real, wrk::Vector{Float64})
     n = length(t)
     ccall((:splint_, ddierckx), Float64,
-        (Ptr{Float64}, Ptr{Int32},
-         Ptr{Float64}, Ptr{Int32},
-         Ptr{Float64}, Ptr{Float64},
-         Ptr{Float64}),
-         t, &n, c, &k,
-         &Float64(a), &Float64(b), wrk)
+        (Ref{Float64}, Ref{Int32},
+         Ref{Float64}, Ref{Int32},
+         Ref{Float64}, Ref{Float64},
+         Ref{Float64}),
+         t, n, c, k,
+         Float64(a), Float64(b), wrk)
 end
 
 integrate(spline::Spline1D, a::Real, b::Real) =
@@ -384,12 +384,12 @@ function roots(spline::Spline1D; maxn::Integer=8)
     m = Vector{Int32}(1)
     ier = Vector{Int32}(1)
     ccall((:sproot_, ddierckx), Void,
-          (Ptr{Float64}, Ptr{Int32},  # t, n
-           Ptr{Float64}, Ptr{Float64},  # c, zeros
-           Ptr{Int32}, Ptr{Int32},  # mest, m
-           Ptr{Int32}),  # ier
-          spline.t, &n, spline.c, zeros,
-          &maxn, m, ier)
+          (Ref{Float64}, Ref{Int32},  # t, n
+           Ref{Float64}, Ref{Float64},  # c, zeros
+           Ref{Int32}, Ref{Int32},  # mest, m
+           Ref{Int32}),  # ier
+          spline.t, n, spline.c, zeros,
+          maxn, m, ier)
 
     if ier[1] == 0
         return zeros[1:m[1]]
@@ -524,49 +524,49 @@ function _ParametricSpline(u::Union{AbstractVector, Void}, x::AbstractMatrix,
 
     if !periodic
         ccall((:parcur_, ddierckx), Void,
-              (Ptr{Int32}, Ptr{Int32}, # iopt, ipar
-              Ptr{Int32}, Ptr{Int32}, # idim, m
-              Ptr{Float64}, Ptr{Int32}, # u, mx
-              Ptr{Float64}, Ptr{Float64}, # x, w
-              Ptr{Float64}, Ptr{Float64}, # ub, ue
-              Ptr{Int32}, Ptr{Float64}, # k, s
-              Ptr{Int32}, Ptr{Int32}, # nest, n
-              Ptr{Float64}, Ptr{Int32}, # t, nc
-              Ptr{Float64}, Ptr{Float64}, # c, fp
-              Ptr{Float64}, Ptr{Int32}, # wrk, lwrk
-              Ptr{Int32}, Ptr{Int32}), #iwrk, ier
-              &iopt, &ipar,
-              &idim, &m,
-              uin, &length(x),
+              (Ref{Int32}, Ref{Int32}, # iopt, ipar
+              Ref{Int32}, Ref{Int32}, # idim, m
+              Ref{Float64}, Ref{Int32}, # u, mx
+              Ref{Float64}, Ref{Float64}, # x, w
+              Ref{Float64}, Ref{Float64}, # ub, ue
+              Ref{Int32}, Ref{Float64}, # k, s
+              Ref{Int32}, Ref{Int32}, # nest, n
+              Ref{Float64}, Ref{Int32}, # t, nc
+              Ref{Float64}, Ref{Float64}, # c, fp
+              Ref{Float64}, Ref{Int32}, # wrk, lwrk
+              Ref{Int32}, Ref{Int32}), #iwrk, ier
+              iopt, ipar,
+              idim, m,
+              uin, length(x),
               xin, win,
-              &ub, &ue,
-              &k, &s,
-              &nest, n,
-              t, &length(c),
+              ub, ue,
+              k, s,
+              nest, n,
+              t, length(c),
               c, fp,
-              wrk, &lwrk,
+              wrk, lwrk,
               iwrk, ier)
     else
         ccall((:clocur_, ddierckx), Void,
-              (Ptr{Int32}, Ptr{Int32}, # iopt, ipar
-              Ptr{Int32}, Ptr{Int32}, # idim, m
-              Ptr{Float64}, Ptr{Int32}, # u, mx
-              Ptr{Float64}, Ptr{Float64}, # x, w
-              Ptr{Int32}, Ptr{Float64}, # k, s
-              Ptr{Int32}, Ptr{Int32}, # nest, n
-              Ptr{Float64}, Ptr{Int32}, # t, nc
-              Ptr{Float64}, Ptr{Float64}, # c, fp
-              Ptr{Float64}, Ptr{Int32}, # wrk, lwrk
-              Ptr{Int32}, Ptr{Int32}), #iwrk, ier
-              &iopt, &ipar,
-              &idim, &m,
-              uin, &length(x),
+              (Ref{Int32}, Ref{Int32}, # iopt, ipar
+              Ref{Int32}, Ref{Int32}, # idim, m
+              Ref{Float64}, Ref{Int32}, # u, mx
+              Ref{Float64}, Ref{Float64}, # x, w
+              Ref{Int32}, Ref{Float64}, # k, s
+              Ref{Int32}, Ref{Int32}, # nest, n
+              Ref{Float64}, Ref{Int32}, # t, nc
+              Ref{Float64}, Ref{Float64}, # c, fp
+              Ref{Float64}, Ref{Int32}, # wrk, lwrk
+              Ref{Int32}, Ref{Int32}), #iwrk, ier
+              iopt, ipar,
+              idim, m,
+              uin, length(x),
               xin, win,
-              &k, &s,
-              &nest, n,
-              t, &length(c),
+              k, s,
+              nest, n,
+              t, length(c),
               c, fp,
-              wrk, &lwrk,
+              wrk, lwrk,
               iwrk, ier)
     end
 
@@ -628,7 +628,7 @@ integrate(spline::ParametricSpline, a::Real, b::Real) =
 # in the ccall()s in these methods, all the x and y related inputs are
 # swapped with regard to what the Fortran documentation says.
 
-const _fit2d_messages = @compat Dict(
+const _fit2d_messages = Dict(
 -3=>
 
 """The coefficients of the spline returned have been computed as the
@@ -759,13 +759,13 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractVector;
     win = convert(Vector{Float64}, w)
 
     # return values
-    nx = Vector{Int32}(1)
+    nx = Ref{Int32}()
     tx = Vector{Float64}(nxest)
-    ny = Vector{Int32}(1)
+    ny = Ref{Int32}()
     ty = Vector{Float64}(nyest)
     c = Vector{Float64}((nxest-kx-1) * (nyest-ky-1))
-    fp = Vector{Float64}(1)
-    ier = Vector{Int32}(1)
+    fp = Ref{Float64}()
+    ier = Ref{Int32}()
 
     # work arrays
     # Note: in lwrk1 and lwrk2, x and y are swapped on purpose.
@@ -777,74 +777,74 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractVector;
     iwrk = Vector{Int32}(kwrk)
 
     ccall((:surfit_, ddierckx), Void,
-          (Ptr{Int32}, Ptr{Int32},  # iopt, m
-           Ptr{Float64}, Ptr{Float64},  # y, x
-           Ptr{Float64}, Ptr{Float64},  # z, w
-           Ptr{Float64}, Ptr{Float64},  # yb, ye
-           Ptr{Float64}, Ptr{Float64},  # xb, xe
-           Ptr{Int32}, Ptr{Int32}, Ptr{Float64},  # ky, kx, s
-           Ptr{Int32}, Ptr{Int32}, Ptr{Int32},  # nyest, nxest, nmax
-           Ptr{Float64},  # eps
-           Ptr{Int32}, Ptr{Float64},  # ny, tx
-           Ptr{Int32}, Ptr{Float64},  # nx, tx
-           Ptr{Float64}, Ptr{Float64},  # c, fp
-           Ptr{Float64}, Ptr{Int32},  # wrk1, lwrk1
-           Ptr{Float64}, Ptr{Int32},  # wrk2, lwrk2
-           Ptr{Int32}, Ptr{Int32}, Ptr{Int32}),   # iwrk, kwrk, ier
-          &0, &m, yin, xin, zin, win, &yb, &ye, &xb, &xe, &ky, &kx,
-          &@compat(Float64(s)), &nyest, &nxest, &nmax, &eps, ny, ty, nx, tx,
-          c, fp, wrk1, &lwrk1, wrk2, &lwrk2, iwrk, &kwrk, ier)
+          (Ref{Int32}, Ref{Int32},  # iopt, m
+           Ref{Float64}, Ref{Float64},  # y, x
+           Ref{Float64}, Ref{Float64},  # z, w
+           Ref{Float64}, Ref{Float64},  # yb, ye
+           Ref{Float64}, Ref{Float64},  # xb, xe
+           Ref{Int32}, Ref{Int32}, Ref{Float64},  # ky, kx, s
+           Ref{Int32}, Ref{Int32}, Ref{Int32},  # nyest, nxest, nmax
+           Ref{Float64},  # eps
+           Ref{Int32}, Ref{Float64},  # ny, tx
+           Ref{Int32}, Ref{Float64},  # nx, tx
+           Ref{Float64}, Ref{Float64},  # c, fp
+           Ref{Float64}, Ref{Int32},  # wrk1, lwrk1
+           Ref{Float64}, Ref{Int32},  # wrk2, lwrk2
+           Ref{Int32}, Ref{Int32}, Ref{Int32}),   # iwrk, kwrk, ier
+          0, m, yin, xin, zin, win, yb, ye, xb, xe, ky, kx,
+          Float64(s), nyest, nxest, nmax, eps, ny, ty, nx, tx,
+          c, fp, wrk1, lwrk1, wrk2, lwrk2, iwrk, kwrk, ier)
 
-    while ier[1] > 10
+    while ier[] > 10
         # lwrk2 is too small, i.e., there is not enough workspace
         # for computing the minimal least-squares solution of a rank
         # deficient system of linear equations. ier gives the
         # requested value for lwrk2. Rerun with that value in "continue"
         # mode, with iopt = 1.
-        lwrk2 = ier[1]
+        lwrk2 = ier[]
         resize!(wrk2, lwrk2)
         ccall((:surfit_, ddierckx), Void,
-              (Ptr{Int32}, Ptr{Int32},  # iopt, m
-               Ptr{Float64}, Ptr{Float64},  # y, x
-               Ptr{Float64}, Ptr{Float64},  # z, w
-               Ptr{Float64}, Ptr{Float64},  # yb, ye
-               Ptr{Float64}, Ptr{Float64},  # xb, xe
-               Ptr{Int32}, Ptr{Int32}, Ptr{Float64},  # ky, kx, s
-               Ptr{Int32}, Ptr{Int32}, Ptr{Int32},  # nyest, nxest, nmax
-               Ptr{Float64},  # eps
-               Ptr{Int32}, Ptr{Float64},  # ny, tx
-               Ptr{Int32}, Ptr{Float64},  # nx, tx
-               Ptr{Float64}, Ptr{Float64},  # c, fp
-               Ptr{Float64}, Ptr{Int32},  # wrk1, lwrk1
-               Ptr{Float64}, Ptr{Int32},  # wrk2, lwrk2
-               Ptr{Int32}, Ptr{Int32}, Ptr{Int32}),   # iwrk, kwrk, ier
-              &1, &m, yin, xin, zin, win, &yb, &ye, &xb, &xe, &ky, &kx, &s,
-              &nyest, &nxest, &nmax, &eps, ny, ty, nx, tx, c, fp,
-              wrk1, &lwrk1, wrk2, &lwrk2, iwrk, &kwrk, ier)
+              (Ref{Int32}, Ref{Int32},  # iopt, m
+               Ref{Float64}, Ref{Float64},  # y, x
+               Ref{Float64}, Ref{Float64},  # z, w
+               Ref{Float64}, Ref{Float64},  # yb, ye
+               Ref{Float64}, Ref{Float64},  # xb, xe
+               Ref{Int32}, Ref{Int32}, Ref{Float64},  # ky, kx, s
+               Ref{Int32}, Ref{Int32}, Ref{Int32},  # nyest, nxest, nmax
+               Ref{Float64},  # eps
+               Ref{Int32}, Ref{Float64},  # ny, tx
+               Ref{Int32}, Ref{Float64},  # nx, tx
+               Ref{Float64}, Ref{Float64},  # c, fp
+               Ref{Float64}, Ref{Int32},  # wrk1, lwrk1
+               Ref{Float64}, Ref{Int32},  # wrk2, lwrk2
+               Ref{Int32}, Ref{Int32}, Ref{Int32}),   # iwrk, kwrk, ier
+              1, m, yin, xin, zin, win, yb, ye, xb, xe, ky, kx, s,
+              nyest, nxest, nmax, eps, ny, ty, nx, tx, c, fp,
+              wrk1, lwrk1, wrk2, lwrk2, iwrk, kwrk, ier)
     end
 
-    if (ier[1] == 0 || ier[1] == -1 || ier[1] == -2)
+    if (ier[] == 0 || ier[] == -1 || ier[] == -2)
         # good values, pass.
-    elseif ier[1] < -2
+    elseif ier[] < -2
         warn("""
         The coefficients of the spline returned have been
         computed as the minimal norm least-squares solution of a
-        (numerically) rank deficient system. The rank is $(-ier[1]).
-        The rank deficiency is $((nx[1]-kx-1)*(ny[1]-ky-1)+ier[1]).
+        (numerically) rank deficient system. The rank is $(-ier[]).
+        The rank deficiency is $((nx[]-kx-1)*(ny[]-ky-1)+ier[]).
         Especially if the rank deficiency is large the results may
         be inaccurate.""")
         # "The results could also seriously depend on the value of
         # eps" (not in message because eps is currently not an input)
     else
-        error(_fit2d_messages[ier[1]])
+        error(_fit2d_messages[ier[]])
     end
 
     # Resize output arrays to the size actually used.
-    resize!(tx, nx[1])
-    resize!(ty, ny[1])
-    resize!(c, (nx[1] - kx - 1) * (ny[1] - ky - 1))
+    resize!(tx, nx[])
+    resize!(ty, ny[])
+    resize!(c, (nx[] - kx - 1) * (ny[] - ky - 1))
 
-    return Spline2D(tx, ty, c, kx, ky, fp[1])
+    return Spline2D(tx, ty, c, kx, ky, fp[])
 end
 
 
@@ -873,13 +873,13 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractMatrix;
     zin = convert(Matrix{Float64}, z)
 
     # Return values
-    nx = Vector{Int32}(1)
+    nx = Ref{Int32}()
     tx = Vector{Float64}(nxest)
-    ny = Vector{Int32}(1)
+    ny = Ref{Int32}()
     ty = Vector{Float64}(nyest)
     c = Vector{Float64}((nxest-kx-1) * (nyest-ky-1))
-    fp = Vector{Float64}(1)
-    ier = Vector{Int32}(1)
+    fp = Ref{Float64}()
+    ier = Ref{Int32}()
 
     # Work arrays.
     # Note that in lwrk, x and y are swapped with respect to the Fortran
@@ -891,34 +891,34 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractMatrix;
     iwrk = Vector{Int32}(kwrk)
 
     ccall((:regrid_, ddierckx), Void,
-          (Ptr{Int32},  # iopt
-           Ptr{Int32}, Ptr{Float64},  # my, y
-           Ptr{Int32}, Ptr{Float64},  # mx, x
-           Ptr{Float64},  # z
-           Ptr{Float64}, Ptr{Float64},  # yb, ye
-           Ptr{Float64}, Ptr{Float64},  # xb, xe
-           Ptr{Int32}, Ptr{Int32}, Ptr{Float64},  # ky, kx, s
-           Ptr{Int32}, Ptr{Int32},  # nyest, nxest
-           Ptr{Int32}, Ptr{Float64},  # ny, ty
-           Ptr{Int32}, Ptr{Float64},  # nx, tx
-           Ptr{Float64}, Ptr{Float64},  # c, fp
-           Ptr{Float64}, Ptr{Int32},  # wrk, lwrk
-           Ptr{Int32}, Ptr{Int32},  # iwrk, lwrk
-           Ptr{Int32}),  # ier
-          &0f0, &my, yin, &mx, xin, zin, &yb, &ye, &xb, &xe, &ky, &kx,
-          &@compat(Float64(s)), &nyest, &nxest, ny, ty, nx, tx, c, fp,
-          wrk, &lwrk, iwrk, &kwrk, ier)
+          (Ref{Int32},  # iopt
+           Ref{Int32}, Ref{Float64},  # my, y
+           Ref{Int32}, Ref{Float64},  # mx, x
+           Ref{Float64},  # z
+           Ref{Float64}, Ref{Float64},  # yb, ye
+           Ref{Float64}, Ref{Float64},  # xb, xe
+           Ref{Int32}, Ref{Int32}, Ref{Float64},  # ky, kx, s
+           Ref{Int32}, Ref{Int32},  # nyest, nxest
+           Ref{Int32}, Ref{Float64},  # ny, ty
+           Ref{Int32}, Ref{Float64},  # nx, tx
+           Ref{Float64}, Ref{Float64},  # c, fp
+           Ref{Float64}, Ref{Int32},  # wrk, lwrk
+           Ref{Int32}, Ref{Int32},  # iwrk, lwrk
+           Ref{Int32}),  # ier
+          0f0, my, yin, mx, xin, zin, yb, ye, xb, xe, ky, kx,
+          Float64(s), nyest, nxest, ny, ty, nx, tx, c, fp,
+          wrk, lwrk, iwrk, kwrk, ier)
 
-    if !(ier[1] == 0 || ier[1] == -1 || ier[1] == -2)
-        error(_fit2d_messages[ier[1]])
+    if !(ier[] == 0 || ier[] == -1 || ier[] == -2)
+        error(_fit2d_messages[ier[]])
     end
 
     # Resize output arrays to the size actually used.
-    resize!(tx, nx[1])
-    resize!(ty, ny[1])
-    resize!(c, (nx[1] - kx - 1) * (ny[1] - ky - 1))
+    resize!(tx, nx[])
+    resize!(ty, ny[])
+    resize!(c, (nx[] - kx - 1) * (ny[] - ky - 1))
 
-    return Spline2D(tx, ty, c, kx, ky, fp[1])
+    return Spline2D(tx, ty, c, kx, ky, fp[])
 end
 
 
@@ -930,49 +930,49 @@ function evaluate(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     xin = convert(Vector{Float64}, x)
     yin = convert(Vector{Float64}, y)
 
-    ier = Vector{Int32}(1)
+    ier = Ref{Int32}()
     lwrk = spline.kx + spline.ky + 2
     wrk = Vector{Float64}(lwrk)
     z = Vector{Float64}(m)
 
     ccall((:bispeu_, ddierckx), Void,
-          (Ptr{Float64}, Ptr{Int32},  # ty, ny
-           Ptr{Float64}, Ptr{Int32},  # tx, nx
-           Ptr{Float64},  # c
-           Ptr{Int32}, Ptr{Int32},  # ky, kx
-           Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # y, x, z
-           Ptr{Int32},  # m
-           Ptr{Float64}, Ptr{Int32}, Ptr{Int32}),  # wrk, lwrk, ier
-          spline.ty, &length(spline.ty),
-          spline.tx, &length(spline.tx),
-          spline.c, &spline.ky, &spline.kx, yin, xin, z, &m,
-          wrk, &lwrk, ier)
+          (Ref{Float64}, Ref{Int32},  # ty, ny
+           Ref{Float64}, Ref{Int32},  # tx, nx
+           Ref{Float64},  # c
+           Ref{Int32}, Ref{Int32},  # ky, kx
+           Ref{Float64}, Ref{Float64}, Ref{Float64},  # y, x, z
+           Ref{Int32},  # m
+           Ref{Float64}, Ref{Int32}, Ref{Int32}),  # wrk, lwrk, ier
+          spline.ty, length(spline.ty),
+          spline.tx, length(spline.tx),
+          spline.c, spline.ky, spline.kx, yin, xin, z, m,
+          wrk, lwrk, ier)
 
-    ier[1] == 0 || error(_eval2d_message)
+    ier[] == 0 || error(_eval2d_message)
 
     return z
 end
 
 function evaluate(spline::Spline2D, x::Real, y::Real)
-    ier = Vector{Int32}(1)
+    ier = Ref{Int32}()
     lwrk = spline.kx + spline.ky + 2
     wrk = Vector{Float64}(lwrk)
-    z = Vector{Float64}(1)
+    z = Ref{Float64}()
     ccall((:bispeu_, ddierckx), Void,
-          (Ptr{Float64}, Ptr{Int32},  # ty, ny
-           Ptr{Float64}, Ptr{Int32},  # tx, nx
-           Ptr{Float64},  # c
-           Ptr{Int32}, Ptr{Int32},  # ky, kx
-           Ptr{Float64}, Ptr{Float64}, Ptr{Float64},  # y, x, z
-           Ptr{Int32},  # m
-           Ptr{Float64}, Ptr{Int32}, Ptr{Int32}),  # wrk, lwrk, ier
-          spline.ty, &length(spline.ty),
-          spline.tx, &length(spline.tx),
-          spline.c, &spline.ky, &spline.kx, &y, &x, z, &1,
-          wrk, &lwrk, ier)
+          (Ref{Float64}, Ref{Int32},  # ty, ny
+           Ref{Float64}, Ref{Int32},  # tx, nx
+           Ref{Float64},  # c
+           Ref{Int32}, Ref{Int32},  # ky, kx
+           Ref{Float64}, Ref{Float64}, Ref{Float64},  # y, x, z
+           Ref{Int32},  # m
+           Ref{Float64}, Ref{Int32}, Ref{Int32}),  # wrk, lwrk, ier
+          spline.ty, length(spline.ty),
+          spline.tx, length(spline.tx),
+          spline.c, spline.ky, spline.kx, y, x, z, 1,
+          wrk, lwrk, ier)
 
-    ier[1] == 0 || error(_eval2d_message)
-    return z[1]
+    ier[] == 0 || error(_eval2d_message)
+    return z[]
 end
 
 # Evaluate spline on the grid spanned by the input arrays.
@@ -987,26 +987,26 @@ function evalgrid(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     wrk = Vector{Float64}(lwrk)
     kwrk = mx + my
     iwrk = Vector{Int32}(kwrk)
-    ier = Vector{Int32}(1)
+    ier = Ref{Int32}()
     z = Matrix{Float64}(mx, my)
 
     ccall((:bispev_, ddierckx), Void,
-          (Ptr{Float64}, Ptr{Int32},  # ty, ny
-           Ptr{Float64}, Ptr{Int32},  # tx, nx
-           Ptr{Float64},  # c
-           Ptr{Int32}, Ptr{Int32},  # ky, kx
-           Ptr{Float64}, Ptr{Int32},  # y, my
-           Ptr{Float64}, Ptr{Int32},  # x, mx
-           Ptr{Float64},  # z
-           Ptr{Float64}, Ptr{Int32},  # wrk, lwrk
-           Ptr{Int32}, Ptr{Int32},  # iwrk, kwrk
-           Ptr{Int32}),  # ier
-          spline.ty, &length(spline.ty),
-          spline.tx, &length(spline.tx),
-          spline.c, &spline.ky, &spline.kx, yin, &my, xin, &mx, z,
-          wrk, &lwrk, iwrk, &kwrk, ier)
+          (Ref{Float64}, Ref{Int32},  # ty, ny
+           Ref{Float64}, Ref{Int32},  # tx, nx
+           Ref{Float64},  # c
+           Ref{Int32}, Ref{Int32},  # ky, kx
+           Ref{Float64}, Ref{Int32},  # y, my
+           Ref{Float64}, Ref{Int32},  # x, mx
+           Ref{Float64},  # z
+           Ref{Float64}, Ref{Int32},  # wrk, lwrk
+           Ref{Int32}, Ref{Int32},  # iwrk, kwrk
+           Ref{Int32}),  # ier
+          spline.ty, length(spline.ty),
+          spline.tx, length(spline.tx),
+          spline.c, spline.ky, spline.kx, yin, my, xin, mx, z,
+          wrk, lwrk, iwrk, kwrk, ier)
 
-    ier[1] == 0 || error(_eval2d_message)
+    ier[] == 0 || error(_eval2d_message)
 
     return z
 end
@@ -1021,29 +1021,29 @@ function integrate(spline::Spline2D, xb::Real, xe::Real, yb::Real, ye::Real)
 
         wrk = Vector{Float64}(nx + ny -kx - ky -2)
         ccall((:dblint_, ddierckx), Float64,
-              (Ptr{Float64}, Ptr{Int32},  # tx, nx
-               Ptr{Float64}, Ptr{Int32},  # ty, ny
-               Ptr{Float64}, Ptr{Int32},  # c, kx
-               Ptr{Int32}, #ky
-               Ptr{Float64}, Ptr{Float64},  # xb, xe
-               Ptr{Float64}, Ptr{Float64},  # yb, ye
-               Ptr{Float64}),  # wrk
-              spline.tx, &nx,
-              spline.ty, &ny,
-              spline.c, &spline.kx,
-              &spline.ky,
-              &xb, &xe,
-              &yb, &ye,
+              (Ref{Float64}, Ref{Int32},  # tx, nx
+               Ref{Float64}, Ref{Int32},  # ty, ny
+               Ref{Float64}, Ref{Int32},  # c, kx
+               Ref{Int32}, #ky
+               Ref{Float64}, Ref{Float64},  # xb, xe
+               Ref{Float64}, Ref{Float64},  # yb, ye
+               Ref{Float64}),  # wrk
+              spline.tx, nx,
+              spline.ty, ny,
+              spline.c, spline.kx,
+              spline.ky,
+              xb, xe,
+              yb, ye,
               wrk)
 end
 
-# call synonyms for evaluate(): @compat needed for v0.4
-@compat (spl::Spline1D)(x::Real) = evaluate(spl, x)
-@compat (spl::Spline1D)(x::AbstractVector) = evaluate(spl, x)
-@compat (spl::ParametricSpline)(x::Real) = evaluate(spl, x)
-@compat (spl::ParametricSpline)(x::AbstractVector) = evaluate(spl, x)
-@compat (spl::Spline2D)(x::Real, y::Real) = evaluate(spl, x, y)
-@compat (spl::Spline2D)(x::AbstractVector, y::AbstractVector) =
+# call synonyms for evaluate():
+(spl::Spline1D)(x::Real) = evaluate(spl, x)
+(spl::Spline1D)(x::AbstractVector) = evaluate(spl, x)
+(spl::ParametricSpline)(x::Real) = evaluate(spl, x)
+(spl::ParametricSpline)(x::AbstractVector) = evaluate(spl, x)
+(spl::Spline2D)(x::Real, y::Real) = evaluate(spl, x, y)
+(spl::Spline2D)(x::AbstractVector, y::AbstractVector) =
     evaluate(spl, x, y)
 
 end # module
