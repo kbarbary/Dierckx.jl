@@ -59,7 +59,7 @@ y = x.^3
 
 xp = linspace(-8.0, 13.0, 100)
 xp_zeros = Float64[(0. <= xi <= 4.) ? xi : 0.0 for xi in xp]
-xp_clip = Float64[(0. <= xi <= 4.) ? xi : (xi<0.0)? 0.0 : 4. for xi in xp]
+xp_clip = Float64[(0. <= xi <= 4.) ? xi : (xi < 0.0) ? 0.0 : 4. for xi in xp]
 
 spl = Spline1D(x, y)
 t = get_knots(spl)[2: end-1]  # knots, excluding those at endpoints
@@ -90,11 +90,11 @@ xt = [0.3, 0.4, 0.5]
 x = linspace(0, 10, 70)
 y = x.^2
 spl = Spline1D(x, y)
-@test integrate(spl, 1.0, 5.0) ≈ 5.^3/3 - 1/3
+@test integrate(spl, 1.0, 5.0) ≈ 5.0^3/3 - 1/3
 
 # test roots
 x = linspace(0, 10, 70)
-y = (x-4).^2-1
+y = (x .- 4).^2 .- 1
 spl = Spline1D(x, y)
 @test roots(spl) ≈ [3, 5]
 
@@ -134,7 +134,7 @@ x = [u'.^2; u'.^3]
 
 up = linspace(-8.0, 13.0, 100)
 up_zeros = Float64[(0. <= ui <= 4.) ? ui : 0.0 for ui in up]
-up_clip = Float64[(0. <= ui <= 4.) ? ui : (ui<0.0)? 0.0 : 4. for ui in up]
+up_clip = Float64[(0. <= ui <= 4.) ? ui : (ui < 0.0) ? 0.0 : 4. for ui in up]
 
 spl = ParametricSpline(u, x)
 t = get_knots(spl)[2: end-1]  # knots, excluding those at endpoints
@@ -168,7 +168,7 @@ ut = [0.3, 0.4, 0.5]
 u = linspace(0, 10, 70)
 x = [u'.^2; u'.^3]
 spl = ParametricSpline(u, x)
-@test integrate(spl, 1.0, 5.0) ≈ [5.^3/3 - 1/3, 5.^4/4 - 1/4]
+@test integrate(spl, 1.0, 5.0) ≈ [5.0^3/3 - 1/3, 5.0^4/4 - 1/4]
 
 # -----------------------------------------------------------------------------
 # Spline2D
@@ -257,7 +257,9 @@ for (f, domain, exact) in [(test2d_1, (0.0, 1.0, 0.0, 1.0), 1.0/3.0),
 
     fxygrid = zeros(npoints, npoints)
     for (j, y) in enumerate(ygrid)
+        local j, y
         for (i, x) in enumerate(xgrid)
+            local i, x
             fxygrid[i,j] = f(x, y)
         end
     end
