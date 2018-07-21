@@ -2,8 +2,6 @@ __precompile__()
 
 module Dierckx
 
-using Compat
-
 export Spline1D,
        Spline2D,
        ParametricSpline,
@@ -22,7 +20,7 @@ import Libdl
 
 unixpath = "../deps/src/ddierckx/libddierckx"
 winpath = "../deps/bin$(Sys.WORD_SIZE)/libddierckx"
-const ddierckx = joinpath(dirname(@__FILE__), Compat.Sys.isunix() ? unixpath : winpath)
+const ddierckx = joinpath(dirname(@__FILE__), Sys.isunix() ? unixpath : winpath)
 
 function __init__()
     # Ensure library is available.

@@ -1,6 +1,5 @@
 #!/usr/bin/env julia
 using Dierckx
-using Compat
 using Test
 using Random: srand
 
@@ -41,7 +40,7 @@ w = [1.00000000e+12, 6.88875973e+02, 4.89314737e+02, 4.26864807e+02,
      6.07746770e+02, 4.51341444e+02, 3.17480210e+02, 4.51341444e+02,
      6.07746770e+02, 4.26864807e+02, 4.89314737e+02, 6.88875973e+02,
      1.00000000e+12]
-spl = Spline1D(x, y; w=w, s=@compat(Float64(length(x))))
+spl = Spline1D(x, y; w=w, s=Float64(length(x)))
 desired = [0.35100374, 0.51715855, 0.87789547, 0.98719344]
 actual = evaluate(spl, [0.1, 0.5, 0.9, 0.99])
 @test isapprox(actual, desired, atol=5e-4)
@@ -201,7 +200,7 @@ spl = Spline2D(x, y, z; s=length(x))
 srand(0)
 x = rand(100)
 y = rand(100)
-z = @compat sin.(x) .* sin.(y)
+z = sin.(x) .* sin.(y)
 @test_throws ErrorException Spline2D(x, y, z; kx=1, ky=1, s=0.0)
 
 # test grid input creation
