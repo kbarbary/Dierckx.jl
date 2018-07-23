@@ -16,6 +16,10 @@ a pure-Julia interpolation package. This package provides is intended to
 complement Interpolations.jl and to serve as a benchmark in cases
 of overlapping functionality.
 
+All new development on `Dierckx.jl` will be for Julia v0.7 and above.
+The `master` branch is therefore incompatible with earlier versions
+of Julia. 
+
 ### Features
 
 - Implements B-splines (basis splines).
@@ -37,6 +41,9 @@ julia> Pkg.add("Dierckx")
 The Fortran library source code is distributed with the package, so
 you need a Fortran compiler on OSX or Linux. On Ubuntu,
 `sudo apt-get install gfortran` will do it.
+
+On Darwin, `gfortran` comes bundled with `gcc`, so after instslling Homebrew,
+`brew install gcc` should install `gfortran`.
 
 On Windows, a compiled dll will be downloaded.
 

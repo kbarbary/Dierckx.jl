@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 using Dierckx
-using Compat
-using Base.Test
+using Test
+using Random: srand
 
 # Answers 'ans' are from scipy.interpolate,
 # generated with genanswers.py script.
@@ -40,7 +40,7 @@ w = [1.00000000e+12, 6.88875973e+02, 4.89314737e+02, 4.26864807e+02,
      6.07746770e+02, 4.51341444e+02, 3.17480210e+02, 4.51341444e+02,
      6.07746770e+02, 4.26864807e+02, 4.89314737e+02, 6.88875973e+02,
      1.00000000e+12]
-spl = Spline1D(x, y; w=w, s=@compat(Float64(length(x))))
+spl = Spline1D(x, y; w=w, s=Float64(length(x)))
 desired = [0.35100374, 0.51715855, 0.87789547, 0.98719344]
 actual = evaluate(spl, [0.1, 0.5, 0.9, 0.99])
 @test isapprox(actual, desired, atol=5e-4)
@@ -57,7 +57,7 @@ spl = Spline1D(x, y, periodic=true)
 x = [0.0:4.0;]
 y = x.^3
 
-xp = linspace(-8.0, 13.0, 100)
+xp = range(-8.0, stop=13.0, length=100)
 xp_zeros = Float64[(0. <= xi <= 4.) ? xi : 0.0 for xi in xp]
 xp_clip = Float64[(0. <= xi <= 4.) ? xi : (xi < 0.0) ? 0.0 : 4. for xi in xp]
 
@@ -80,20 +80,20 @@ spl = Spline1D(x, y; bc="error")
 @test_throws ErrorException Spline1D(x, y; bc="unknown")
 
 # test derivative
-x = linspace(0, 1, 70)
+x = range(0, stop=1, length = 70)
 y = x.^3
 spl = Spline1D(x, y)
 xt = [0.3, 0.4, 0.5]
 @test derivative(spl, xt) ≈ 3xt.^2
 
 # test integral
-x = linspace(0, 10, 70)
+x = range(0, stop=10, length = 70)
 y = x.^2
 spl = Spline1D(x, y)
 @test integrate(spl, 1.0, 5.0) ≈ 5.0^3/3 - 1/3
 
 # test roots
-x = linspace(0, 10, 70)
+x = range(0, stop=10, length = 70)
 y = (x .- 4).^2 .- 1
 spl = Spline1D(x, y)
 @test roots(spl) ≈ [3, 5]
@@ -132,7 +132,7 @@ spl = ParametricSpline(x, periodic=true)
 u = 0.0:4.0
 x = [u'.^2; u'.^3]
 
-up = linspace(-8.0, 13.0, 100)
+up = range(-8.0, stop=13.0, length = 100)
 up_zeros = Float64[(0. <= ui <= 4.) ? ui : 0.0 for ui in up]
 up_clip = Float64[(0. <= ui <= 4.) ? ui : (ui < 0.0) ? 0.0 : 4. for ui in up]
 
@@ -155,7 +155,7 @@ spl = ParametricSpline(u, x; bc="error")
 @test_throws ErrorException ParametricSpline(u, x; bc="unknown")
 
 # test derivative
-u = linspace(0, 1, 70)
+u = range(0, stop=1, length = 70)
 x = [u'.^2; u'.^3]
 spl = ParametricSpline(u, x)
 ut = [0.3, 0.4, 0.5]
@@ -165,7 +165,7 @@ ut = [0.3, 0.4, 0.5]
 @test derivative(spl, ut, nu=2) ≈ [2*ones(3)'; 6*ut']
 
 # test integral
-u = linspace(0, 10, 70)
+u = range(0, stop=10, length = 70)
 x = [u'.^2; u'.^3]
 spl = ParametricSpline(u, x)
 @test integrate(spl, 1.0, 5.0) ≈ [5.0^3/3 - 1/3, 5.0^4/4 - 1/4]
@@ -189,8 +189,8 @@ tx, ty = get_knots(spl)
 @test evalgrid(spl, [2.0], [1.5])[1, 1] ≈ 2.0
 
 # In this setting, lwrk2 is too small in the default run.
-x = linspace(-2, 2, 80)
-y = linspace(-2, 2, 80)
+x = range(-2, stop=2, length = 80)
+y = range(-2, stop=2, length = 80)
 z = x .+ y
 spl = Spline2D(x, y, z; s=length(x))
 @test evaluate(spl, 1.0, 1.0) ≈ 2.0
@@ -200,7 +200,7 @@ spl = Spline2D(x, y, z; s=length(x))
 srand(0)
 x = rand(100)
 y = rand(100)
-z = @compat sin.(x) .* sin.(y)
+z = sin.(x) .* sin.(y)
 @test_throws ErrorException Spline2D(x, y, z; kx=1, ky=1, s=0.0)
 
 # test grid input creation
@@ -247,13 +247,13 @@ test2d_2(x, y) = cos(x) + sin(y)
 test2d_3(x, y) = x*exp(x-y)
 for (f, domain, exact) in [(test2d_1, (0.0, 1.0, 0.0, 1.0), 1.0/3.0),
                            (test2d_2, (0.0, pi, 0.0, pi), 2.0*pi),
-                           (test2d_3, (0.0, 1.0, 0.0, 1.0), (e-1.0)/e)]
+                           (test2d_3, (0.0, 1.0, 0.0, 1.0), (ℯ-1.0)/ℯ)]
     (x0, x1, y0, y1) = domain
 
     # define grids for x and y dimensions:
     npoints = 50
-    xgrid = linspace(x0, x1, npoints)
-    ygrid = linspace(y0, y1, npoints)
+    xgrid = range(x0, stop=x1, length = npoints)
+    ygrid = range(y0, stop=y1, length = npoints)
 
     fxygrid = zeros(npoints, npoints)
     for (j, y) in enumerate(ygrid)
@@ -264,8 +264,8 @@ for (f, domain, exact) in [(test2d_1, (0.0, 1.0, 0.0, 1.0), 1.0/3.0),
         end
     end
 
-    spl = Spline2D(xgrid, ygrid, fxygrid)
-    @test isapprox(integrate(spl, x0, x1, y0, y1), exact, atol=1e-6)
+    spl1 = Spline2D(xgrid, ygrid, fxygrid)
+    @test isapprox(integrate(spl1, x0, x1, y0, y1), exact, atol=1e-6)
 end
 
 println("All tests passed.")

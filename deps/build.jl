@@ -1,9 +1,8 @@
-using Compat
 
-if Compat.Sys.isunix()
+if Sys.isunix()
     cd(joinpath(dirname(@__FILE__), "src", "ddierckx"))
 
-    suffix = Compat.Sys.isapple() ? "dylib" : "so"
+    suffix = Sys.isapple() ? "dylib" : "so"
     try
        run(`make FC=ifort SUFFIX=$suffix`)
     catch
@@ -22,5 +21,5 @@ else # Windows
     catch
         run(`powershell -Command "(new-object net.webclient).DownloadFile(\"$url\", \"ddierckx.7z\")"`)
     end
-    run(`$(joinpath(JULIA_HOME, "7z.exe")) x -y ddierckx.7z`)
+    run(`$(joinpath(Sys.BINDIR, "7z.exe")) x -y ddierckx.7z`)
 end

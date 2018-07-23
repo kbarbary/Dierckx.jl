@@ -5,8 +5,7 @@ os:
     - linux
 
 julia:
-    - 0.5
-    - 0.6
+    - 0.7
     - nightly
 
 notifications:
@@ -19,7 +18,7 @@ addons:
 
 before_install:
   - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then brew update; fi
-  - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then brew install gcc; fi
+  - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then brew install gcc || brew link --overwrite gcc; fi
 
 #matrix:
 #  allow_failures:
