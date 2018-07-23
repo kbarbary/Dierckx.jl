@@ -21,5 +21,5 @@ else # Windows
     catch
         run(`powershell -Command "(new-object net.webclient).DownloadFile(\"$url\", \"ddierckx.7z\")"`)
     end
-    run(`$(joinpath(JULIA_HOME, "7z.exe")) x -y ddierckx.7z`)
+    run(`$(joinpath(Sys.BINDIR, "7z.exe")) x -y ddierckx.7z`)
 end
