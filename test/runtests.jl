@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 using Dierckx
 using Test
-using Random: srand
+using Random: seed!
 
 # Answers 'ans' are from scipy.interpolate,
 # generated with genanswers.py script.
@@ -197,7 +197,7 @@ spl = Spline2D(x, y, z; s=length(x))
 
 # In this setting lwrk2 is too small multiple times!
 # Eventually an error about s being too small is thrown.
-srand(0)
+seed!(0)
 x = rand(100)
 y = rand(100)
 z = sin.(x) .* sin.(y)

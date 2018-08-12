@@ -16,17 +16,16 @@ export Spline1D,
 
 import Base: show
 
-import Libdl
 
-unixpath = "../deps/src/ddierckx/libddierckx"
-winpath = "../deps/bin$(Sys.WORD_SIZE)/libddierckx"
-const ddierckx = joinpath(dirname(@__FILE__), Sys.isunix() ? unixpath : winpath)
+const depsfile = joinpath(dirname(dirname(@__FILE__)),"deps","deps.jl")
+if isfile(depsfile)
+    include(depsfile)
+else
+    error("Dierckx is not properly installed. Please run Pkg.build(\"Dierckx\")")
+end
 
 function __init__()
-    # Ensure library is available.
-    if (Libdl.dlopen_e(ddierckx) == C_NULL)
-        error("Dierckx not properly installed. Run Pkg.build(\"Dierckx\")")
-    end
+    check_deps()
 end
 
 # ----------------------------------------------------------------------------
@@ -157,7 +156,7 @@ function Spline1D(x::AbstractVector, y::AbstractVector;
     iwrk = Vector{Int32}(undef, nest)
 
     if !periodic
-        ccall((:curfit_, ddierckx), Nothing,
+        ccall((:curfit_, libddierckx), Nothing,
             (Ref{Int32}, Ref{Int32},  # iopt, m
              Ref{Float64}, Ref{Float64}, Ref{Float64},  # x, y, w
              Ref{Float64}, Ref{Float64},  # xb, xe
@@ -169,7 +168,7 @@ function Spline1D(x::AbstractVector, y::AbstractVector;
             0, m, xin, yin, win, xin[1], xin[end], k, Float64(s),
             nest, n, t, c, fp, wrk, lwrk, iwrk, ier)
     else
-        ccall((:percur_, ddierckx), Nothing,
+        ccall((:percur_, libddierckx), Nothing,
             (Ref{Int32}, Ref{Int32}, # iopt, m
              Ref{Float64}, Ref{Float64}, Ref{Float64}, # x, y, w
              Ref{Int32}, Ref{Float64}, # k, s
@@ -231,7 +230,7 @@ function Spline1D(x::AbstractVector, y::AbstractVector,
     iwrk = Vector{Int32}(undef, n)
 
     if !periodic
-        ccall((:curfit_, ddierckx), Nothing,
+        ccall((:curfit_, libddierckx), Nothing,
             (Ref{Int32}, Ref{Int32},  # iopt, m
              Ref{Float64}, Ref{Float64}, Ref{Float64},  # x, y, w
              Ref{Float64}, Ref{Float64},  # xb, xe
@@ -243,7 +242,7 @@ function Spline1D(x::AbstractVector, y::AbstractVector,
             -1, m, xin, yin, win, xin[1], xin[end], k, -1.0,
             n, n, t, c, fp, wrk, lwrk, iwrk, ier)
     else
-        ccall((:percur_, ddierckx), Nothing,
+        ccall((:percur_, libddierckx), Nothing,
             (Ref{Int32}, Ref{Int32}, # iopt, m
              Ref{Float64}, Ref{Float64}, Ref{Float64}, # x, y, w
              Ref{Int32}, Ref{Float64}, # k, s
@@ -269,7 +268,7 @@ function _evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
     xin = convert(Vector{Float64}, x)
     y = Vector{Float64}(undef, m)
     ier = Ref{Int32}(0)
-    ccall((:splev_, ddierckx), Nothing,
+    ccall((:splev_, libddierckx), Nothing,
          (Ref{Float64}, Ref{Int32},
           Ref{Float64}, Ref{Int32},
           Ref{Float64}, Ref{Float64}, Ref{Int32},
@@ -285,7 +284,7 @@ function _evaluate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
     bc in (0, 1, 2, 3) || error("bc = $bc not in (0, 1, 2, 3)")
     y = Ref{Float64}(0)
     ier = Ref{Int32}(0)
-    ccall((:splev_, ddierckx), Nothing,
+    ccall((:splev_, libddierckx), Nothing,
          (Ref{Float64}, Ref{Int32},
           Ref{Float64}, Ref{Int32},
           Ref{Float64}, Ref{Float64}, Ref{Int32},
@@ -313,7 +312,7 @@ function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
     n = length(t)
     y = Vector{Float64}(undef, m)
     ier = Ref{Int32}(0)
-    ccall((:splder_, ddierckx), Nothing,
+    ccall((:splder_, libddierckx), Nothing,
          (Ref{Float64}, Ref{Int32}, # t, n
           Ref{Float64}, Ref{Int32}, # c, k
           Ref{Int32}, # nu
@@ -330,7 +329,7 @@ function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
     n = length(t)
     y = Ref{Float64}(0)
     ier = Ref{Int32}(0)
-    ccall((:splder_, ddierckx), Nothing,
+    ccall((:splder_, libddierckx), Nothing,
          (Ref{Float64}, Ref{Int32}, # t, n
           Ref{Float64}, Ref{Int32}, # c, k
           Ref{Int32}, # nu
@@ -361,7 +360,7 @@ derivative(spline::Spline1D, x; nu::Int=1) = derivative(spline, x, nu)
 function _integrate(t::Vector{Float64}, c::Vector{Float64}, k::Int,
                     a::Real, b::Real, wrk::Vector{Float64})
     n = length(t)
-    ccall((:splint_, ddierckx), Float64,
+    ccall((:splint_, libddierckx), Float64,
         (Ref{Float64}, Ref{Int32},
          Ref{Float64}, Ref{Int32},
          Ref{Float64}, Ref{Float64},
@@ -383,7 +382,7 @@ function roots(spline::Spline1D; maxn::Integer=8)
     zeros = Vector{Float64}(undef, maxn)
     m = Vector{Int32}(undef, 1)
     ier = Vector{Int32}(undef, 1)
-    ccall((:sproot_, ddierckx), Nothing,
+    ccall((:sproot_, libddierckx), Nothing,
           (Ref{Float64}, Ref{Int32},  # t, n
            Ref{Float64}, Ref{Float64},  # c, zeros
            Ref{Int32}, Ref{Int32},  # mest, m
@@ -523,7 +522,7 @@ function _ParametricSpline(u::Union{AbstractVector, Nothing}, x::AbstractMatrix,
     iwrk = Vector{Int32}(undef, nest)
 
     if !periodic
-        ccall((:parcur_, ddierckx), Nothing,
+        ccall((:parcur_, libddierckx), Nothing,
               (Ref{Int32}, Ref{Int32}, # iopt, ipar
               Ref{Int32}, Ref{Int32}, # idim, m
               Ref{Float64}, Ref{Int32}, # u, mx
@@ -547,7 +546,7 @@ function _ParametricSpline(u::Union{AbstractVector, Nothing}, x::AbstractMatrix,
               wrk, lwrk,
               iwrk, ier)
     else
-        ccall((:clocur_, ddierckx), Nothing,
+        ccall((:clocur_, libddierckx), Nothing,
               (Ref{Int32}, Ref{Int32}, # iopt, ipar
               Ref{Int32}, Ref{Int32}, # idim, m
               Ref{Float64}, Ref{Int32}, # u, mx
@@ -776,7 +775,7 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractVector;
     wrk2 = Vector{Float64}(undef, lwrk2)
     iwrk = Vector{Int32}(undef, kwrk)
 
-    ccall((:surfit_, ddierckx), Nothing,
+    ccall((:surfit_, libddierckx), Nothing,
           (Ref{Int32}, Ref{Int32},  # iopt, m
            Ref{Float64}, Ref{Float64},  # y, x
            Ref{Float64}, Ref{Float64},  # z, w
@@ -803,7 +802,7 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractVector;
         # mode, with iopt = 1.
         lwrk2 = ier[]
         resize!(wrk2, lwrk2)
-        ccall((:surfit_, ddierckx), Nothing,
+        ccall((:surfit_, libddierckx), Nothing,
               (Ref{Int32}, Ref{Int32},  # iopt, m
                Ref{Float64}, Ref{Float64},  # y, x
                Ref{Float64}, Ref{Float64},  # z, w
@@ -890,7 +889,7 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractMatrix;
     kwrk = 3 + mx + my + nxest + nyest
     iwrk = Vector{Int32}(undef, kwrk)
 
-    ccall((:regrid_, ddierckx), Nothing,
+    ccall((:regrid_, libddierckx), Nothing,
           (Ref{Int32},  # iopt
            Ref{Int32}, Ref{Float64},  # my, y
            Ref{Int32}, Ref{Float64},  # mx, x
@@ -935,7 +934,7 @@ function evaluate(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     wrk = Vector{Float64}(undef, lwrk)
     z = Vector{Float64}(undef, m)
 
-    ccall((:bispeu_, ddierckx), Nothing,
+    ccall((:bispeu_, libddierckx), Nothing,
           (Ref{Float64}, Ref{Int32},  # ty, ny
            Ref{Float64}, Ref{Int32},  # tx, nx
            Ref{Float64},  # c
@@ -958,7 +957,7 @@ function evaluate(spline::Spline2D, x::Real, y::Real)
     lwrk = spline.kx + spline.ky + 2
     wrk = Vector{Float64}(undef, lwrk)
     z = Ref{Float64}()
-    ccall((:bispeu_, ddierckx), Nothing,
+    ccall((:bispeu_, libddierckx), Nothing,
           (Ref{Float64}, Ref{Int32},  # ty, ny
            Ref{Float64}, Ref{Int32},  # tx, nx
            Ref{Float64},  # c
@@ -990,7 +989,7 @@ function evalgrid(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     ier = Ref{Int32}()
     z = Matrix{Float64}(undef, mx, my)
 
-    ccall((:bispev_, ddierckx), Nothing,
+    ccall((:bispev_, libddierckx), Nothing,
           (Ref{Float64}, Ref{Int32},  # ty, ny
            Ref{Float64}, Ref{Int32},  # tx, nx
            Ref{Float64},  # c
@@ -1020,7 +1019,7 @@ function integrate(spline::Spline2D, xb::Real, xe::Real, yb::Real, ye::Real)
         ky = spline.ky
 
         wrk = Vector{Float64}(undef, nx + ny -kx - ky -2)
-        ccall((:dblint_, ddierckx), Float64,
+        ccall((:dblint_, libddierckx), Float64,
               (Ref{Float64}, Ref{Int32},  # tx, nx
                Ref{Float64}, Ref{Int32},  # ty, ny
                Ref{Float64}, Ref{Int32},  # c, kx
