@@ -16,18 +16,14 @@ export Spline1D,
 
 import Base: show
 
-import Libdl
 
-unixpath = "../deps/src/ddierckx/libddierckx"
-winpath = "../deps/bin$(Sys.WORD_SIZE)/libddierckx"
-const ddierckx = joinpath(dirname(@__FILE__), Sys.isunix() ? unixpath : winpath)
-
-function __init__()
-    # Ensure library is available.
-    if (Libdl.dlopen_e(ddierckx) == C_NULL)
-        error("Dierckx not properly installed. Run Pkg.build(\"Dierckx\")")
-    end
+const depsfile = joinpath(dirname(dirname(@__FILE__)),"deps","deps.jl")
+if isfile(depsfile)
+    include(depsfile)
+else
+    error("Dierckx is not properly installed. Please run Pkg.build(\"Dierckx\")")
 end
+
 
 # ----------------------------------------------------------------------------
 # 1-d splines
