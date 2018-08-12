@@ -1,3 +1,9 @@
+v0.4.0 (2018-08-12)
+===================
+
+- Drop support for Julia 0.6 and before (support Julia 0.7+ only)
+- Use pre-compiled binaries on all supported platforms.
+
 v0.3.0 (2017-09-18)
 ===================
 
