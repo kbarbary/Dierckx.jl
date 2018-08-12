@@ -11,10 +11,9 @@ This is a Julia wrapper for the
 [dierckx](http://www.netlib.org/dierckx/index.html) Fortran library,
 the same library underlying the spline classes in scipy.interpolate.
 Some of the functionality here overlaps with
-[Interpolations.jl](https://github.com/tlycken/Interpolations.jl),
-a pure-Julia interpolation package. This package provides is intended to
-complement Interpolations.jl and to serve as a benchmark in cases
-of overlapping functionality.
+[Interpolations.jl](https://github.com/JuliaMath/Interpolations.jl),
+a pure-Julia interpolation package.  Take a look at it if you have a
+use case not covered here.
 
 All new development on `Dierckx.jl` will be for Julia v0.7 and above.
 The `master` branch is therefore incompatible with earlier versions
@@ -30,9 +29,20 @@ of Julia.
 - Derivatives, integrals and roots of 1-d splines.
 - Parametric B-splines.
 
+Install (Julia 0.7 and later)
+-----------------------------
 
-Install
--------
+```julia
+(v1.0) pkg> add Dierckx
+```
+
+(Type `]` to enter package mode.) No Fortran compiler is requred on
+any platform.
+
+
+
+Install (Julia 0.6 and earlier)
+-------------------------------
 
 ```julia
 julia> Pkg.add("Dierckx")
