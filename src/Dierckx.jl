@@ -90,6 +90,8 @@ Spline1D(t, c, k, bc, fp) = Spline1D(t, c, k, bc, fp, Vector{Float64}(undef, len
 get_knots(spl::Spline1D) = spl.t[spl.k+1:end-spl.k]
 get_coeffs(spl::Spline1D) = spl.c[1:end-spl.k+1]
 get_residual(spl::Spline1D) = spl.fp
+showcompact(io::IO, x) = show(IOContext(io, :compact => true), x)
+readstring(io::IO) = read(io, String)
 
 function reallycompact(a::Vector)
     io = IOBuffer()
