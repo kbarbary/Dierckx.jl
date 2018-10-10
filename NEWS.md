@@ -1,3 +1,13 @@
+v0.4.1 (2018-10-10)
+===================
+
+- Fix bug when displaying Spline1D and ParametricSpline on Julia 1.0.
+- Use gcc multiversioning in BinaryBuilder to get a
+  GCC-version-specific libddierckx binary. This addresses problems
+  where libddireckx was built against libgfortran4 (which is
+  distributed with the official Julia 1.0 binaries, built with GCC 7),
+  but users building Julia from source with GCC 8 had libgfortran5.
+
 v0.4.0 (2018-08-12)
 ===================
 
