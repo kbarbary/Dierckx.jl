@@ -90,27 +90,26 @@ Spline1D(t, c, k, bc, fp) = Spline1D(t, c, k, bc, fp, Vector{Float64}(undef, len
 get_knots(spl::Spline1D) = spl.t[spl.k+1:end-spl.k]
 get_coeffs(spl::Spline1D) = spl.c[1:end-spl.k+1]
 get_residual(spl::Spline1D) = spl.fp
-showcompact(io::IO, x) = show(IOContext(io, :compact => true), x)
-readstring(io::IO) = read(io, String)
 
 function reallycompact(a::Vector)
     io = IOBuffer()
+    io_compact = IOContext(io, :compact => true)
     if length(a) <= 5
         show(io, a)
     else
         write(io, "[")
-        showcompact(io, a[1])
+        show(io_compact, a[1])
         write(io, ",")
-        showcompact(io, a[2])
+        show(io_compact, a[2])
         write(io, " \u2026 ")
-        showcompact(io, a[end-1])
+        show(io_compact, a[end-1])
         write(io, ",")
-        showcompact(io, a[end])
+        show(io_compact, a[end])
         write(io, "]")
         write(io, " ($(length(a)) elements)")
     end
     seekstart(io)
-    readstring(io)
+    return read(io, String)
 end
 
 

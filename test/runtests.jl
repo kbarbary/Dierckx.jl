@@ -98,6 +98,13 @@ y = (x .- 4).^2 .- 1
 spl = Spline1D(x, y)
 @test roots(spl) ≈ [3, 5]
 
+# test that show works.
+io = IOBuffer()
+show(io, spl)
+seek(io, 0)
+s = read(io, String)
+@test s[1:9] == "Spline1D("
+
 # -----------------------------------------------------------------------------
 # ParametricSpline
 
@@ -169,6 +176,13 @@ u = range(0, stop=10, length = 70)
 x = [u'.^2; u'.^3]
 spl = ParametricSpline(u, x)
 @test integrate(spl, 1.0, 5.0) ≈ [5.0^3/3 - 1/3, 5.0^4/4 - 1/4]
+
+# test that show works.
+io = IOBuffer()
+show(io, spl)
+seek(io, 0)
+s = read(io, String)
+@test s[1:17] == "ParametricSpline("
 
 # -----------------------------------------------------------------------------
 # Spline2D
