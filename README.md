@@ -15,7 +15,7 @@ Some of the functionality here overlaps with
 a pure-Julia interpolation package.  Take a look at it if you have a
 use case not covered here.
 
-All new development on `Dierckx.jl` will be for Julia v0.7 and above.
+All new development on `Dierckx.jl` will be for Julia v1.0 and above.
 The `master` branch is therefore incompatible with earlier versions
 of Julia. 
 
@@ -29,30 +29,22 @@ of Julia.
 - Derivatives, integrals and roots of 1-d splines.
 - Parametric B-splines.
 
-Install (Julia 0.7 and later)
+Install (Julia 1.0 and later)
 -----------------------------
 
 ```julia
 (v1.0) pkg> add Dierckx
 ```
 
-(Type `]` to enter package mode.) No Fortran compiler is requred on
+(Type `]` to enter package mode.) No Fortran compiler is required on
 any platform.
 
-
-
-Install (Julia 0.6 and earlier)
--------------------------------
-
-```julia
-julia> Pkg.add("Dierckx")
-```
 
 The Fortran library source code is distributed with the package, so
 you need a Fortran compiler on OSX or Linux. On Ubuntu,
 `sudo apt-get install gfortran` will do it.
 
-On Darwin, `gfortran` comes bundled with `gcc`, so after instslling Homebrew,
+On Darwin, `gfortran` comes bundled with `gcc`, so after installing Homebrew,
 `brew install gcc` should install `gfortran`.
 
 On Windows, a compiled dll will be downloaded.
@@ -150,7 +142,7 @@ Spline1D(x, y, xknots; w=ones(length(x)), k=3, bc="nearest")
 
   In the first form, the number and positions of knots are chosen
   automatically. The smoothness of the spline is then achieved by
-  minimalizing the discontinuity jumps of the `k`th derivative of the
+  minimizing the discontinuity jumps of the `k`th derivative of the
   spline at the knots. The amount of smoothness is determined by the
   condition that `sum((w[i]*(y[i]-spline(x[i])))**2) <= s`, with `s` a
   given non-negative constant, called the smoothing factor. The number
@@ -172,7 +164,7 @@ Spline1D(x, y, xknots; w=ones(length(x)), k=3, bc="nearest")
 evaluate(spl, x)
 ```
 
-- Evalute the 1-d spline `spl` at points given in `x`, which can be a
+- Evaluate the 1-d spline `spl` at points given in `x`, which can be a
   1-d array or scalar. If a 1-d array, the values must be monotonically
   increasing.
 
@@ -218,7 +210,7 @@ ParametricSpline(u, X, knots, ...)
 
 - `knots` is a 1-d array giving user-specified knots, if desired.
 
-Keyword arguemnts common to all constructor methods:
+Keyword arguments common to all constructor methods:
 
 - `w`: weight applied to each point (length `m` 1-d array).
 - `k`: Spline order (between 1 and 5; default 3).
@@ -249,7 +241,7 @@ Spline2D(x, y, z; kx=3, ky=3, s=0.0)
 evaluate(spl, x, y)
 ```
 
-- Evalute the 2-d spline `spl` at points `(x[i], y[i])`. Inputs can be
+- Evaluate the 2-d spline `spl` at points `(x[i], y[i])`. Inputs can be
   Vectors or scalars. Points outside the domain of the spline are set to
   the values at the boundary.
 
