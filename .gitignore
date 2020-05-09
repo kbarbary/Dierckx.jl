@@ -12,3 +12,6 @@
 deps/build.log
 deps/deps.jl
 deps/usr
+
+# .toml 
+Manifest.toml

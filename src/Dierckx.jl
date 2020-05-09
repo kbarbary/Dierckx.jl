@@ -2,6 +2,11 @@ __precompile__()
 
 module Dierckx
 
+# This 'using' is required to suppress a warning about Dierckx
+# not having Libdl in its dependencies (Libdl is used by BinaryProvider),
+# e.g.: bicycle1885/CodecZlib.jl#26.
+using Libdl
+
 export Spline1D,
        Spline2D,
        ParametricSpline,
@@ -17,7 +22,7 @@ export Spline1D,
 import Base: show
 
 
-const depsfile = joinpath(dirname(dirname(@__FILE__)),"deps","deps.jl")
+const depsfile = joinpath(dirname(dirname(@__FILE__)), "deps", "deps.jl")
 if isfile(depsfile)
     include(depsfile)
 else
@@ -341,7 +346,7 @@ function _derivative(t::Vector{Float64}, c::Vector{Float64}, k::Int,
     return y[]
 end
 
-# TODO: should the function name be evalder, derivative, or grad?
+# TODO: should the function name be evaluate, derivative, or grad?
 #       or should it be integrated with evaluate, above?
 #       (problem with that: derivative doesn't accept bc="nearest")
 # TODO: should `nu` be `d`?

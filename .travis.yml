@@ -5,12 +5,10 @@ os:
     - linux
 
 julia:
-    - 0.7
     - 1.0
     - nightly
 
+coveralls: true
+
 notifications:
     email: false
-
-after_success:
-  - julia -e 'using Pkg; cd(Pkg.dir("Dierckx")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'

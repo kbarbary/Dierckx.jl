@@ -1,3 +1,11 @@
+v0.4.2 (2020-03-08)
+===================
+
+- Moved to the new Project.toml package management
+- Drop support for Julia 0.7 and before (support Julia 1.0+ only)
+- Updated travis.yml and appeveyor.yml to reflect the same 
+
+
 v0.4.1 (2018-10-10)
 ===================
 
