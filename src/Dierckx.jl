@@ -1,11 +1,6 @@
-__precompile__()
-
 module Dierckx
 
-# This 'using' is required to suppress a warning about Dierckx
-# not having Libdl in its dependencies (Libdl is used by BinaryProvider),
-# e.g.: bicycle1885/CodecZlib.jl#26.
-using Libdl
+using Dierckx_jll
 
 export Spline1D,
        Spline2D,
@@ -20,18 +15,6 @@ export Spline1D,
        get_residual
 
 import Base: show
-
-
-const depsfile = joinpath(dirname(dirname(@__FILE__)), "deps", "deps.jl")
-if isfile(depsfile)
-    include(depsfile)
-else
-    error("Dierckx is not properly installed. Please run Pkg.build(\"Dierckx\")")
-end
-
-function __init__()
-    check_deps()
-end
 
 # ----------------------------------------------------------------------------
 # 1-d splines

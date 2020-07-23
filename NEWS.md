@@ -1,3 +1,9 @@
+v0.5.0 (2020-07-21)
+===================
+
+- Drop support for julia (<v1.3)
+- Removed dependency on BinaryBuilder and move building to Dierckx_jll
+
 v0.4.2 (2020-03-08)
 ===================
 
