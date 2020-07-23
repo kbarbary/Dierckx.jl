@@ -15,7 +15,7 @@ Some of the functionality here overlaps with
 a pure-Julia interpolation package.  Take a look at it if you have a
 use case not covered here.
 
-All new development on `Dierckx.jl` will be for Julia v1.0 and above.
+All new development on `Dierckx.jl` will be for Julia v1.3 and above.
 The `master` branch is therefore incompatible with earlier versions
 of Julia. 
 
@@ -29,11 +29,11 @@ of Julia.
 - Derivatives, integrals and roots of 1-d splines.
 - Parametric B-splines.
 
-Install (Julia 1.0 and later)
+Install (Julia 1.3 and later)
 -----------------------------
 
 ```julia
-(v1.0) pkg> add Dierckx
+(v1.3) pkg> add Dierckx
 ```
 
 (Type `]` to enter package mode.) No Fortran compiler is required on
