@@ -105,6 +105,18 @@ seek(io, 0)
 s = read(io, String)
 @test s[1:9] == "Spline1D("
 
+# test equality
+seed!(0)
+x = sort(rand(10))
+y = rand(10)
+sp1 = Spline1D(x, y)
+sp2 = Spline1D(x, y)
+sp3 = Spline1D(x.+1, y)
+sp4 = Spline1D(x, y.+1)
+@test sp1 == sp2
+@test allunique([sp1,sp3,sp4])
+
+
 # -----------------------------------------------------------------------------
 # ParametricSpline
 
@@ -183,6 +195,20 @@ show(io, spl)
 seek(io, 0)
 s = read(io, String)
 @test s[1:17] == "ParametricSpline("
+
+
+# test equality
+seed!(0)
+x = sort(rand(10))
+y = rand(3, 10)
+sp1 = ParametricSpline(x, y)
+sp2 = ParametricSpline(x, y)
+sp3 = ParametricSpline(x.+1, y)
+sp4 = ParametricSpline(x, y.+1)
+@test sp1 == sp2
+@test allunique([sp1,sp3,sp4])
+
+
 
 # -----------------------------------------------------------------------------
 # Spline2D
@@ -281,5 +307,19 @@ for (f, domain, exact) in [(test2d_1, (0.0, 1.0, 0.0, 1.0), 1.0/3.0),
     spl1 = Spline2D(xgrid, ygrid, fxygrid)
     @test isapprox(integrate(spl1, x0, x1, y0, y1), exact, atol=1e-6)
 end
+
+# test equality
+seed!(0)
+x = sort(rand(10))
+y = sort(rand(10))
+z = rand(10,10)
+sp1 = Spline2D(x, y, z)
+sp2 = Spline2D(x, y, z)
+sp3 = Spline2D(x.+1, y, z)
+sp4 = Spline2D(x, y.+1, z)
+sp5 = Spline2D(x, y, z.+1)
+@test sp1 == sp2
+@test allunique([sp1, sp3, sp4, sp5])
+
 
 println("All tests passed.")

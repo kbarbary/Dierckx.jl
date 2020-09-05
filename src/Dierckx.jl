@@ -14,7 +14,7 @@ export Spline1D,
        get_coeffs,
        get_residual
 
-import Base: show
+import Base: show, ==
 
 # ----------------------------------------------------------------------------
 # 1-d splines
@@ -100,6 +100,9 @@ function reallycompact(a::Vector)
     return read(io, String)
 end
 
+function ==(s1::Spline1D, s2::Spline1D)
+    s1.t == s2.t && s1.c == s2.c && s1.k == s2.k && s1.bc == s2.bc && s1.fp == s2.fp
+end
 
 function show(io::IO, spl::Spline1D)
     print(io, """Spline1D(knots=$(reallycompact(get_knots(spl))), k=$(spl.k), extrapolation=\"$(_translate_bc(spl.bc))\", residual=$(spl.fp))""")
@@ -414,6 +417,11 @@ function show(io::IO, spl::ParametricSpline)
     print(io, """ParametricSpline(knots=$(reallycompact(get_knots(spl))), k=$(spl.k), extrapolation=\"$(_translate_bc(spl.bc))\", residual=$(spl.fp))""")
 end
 
+function ==(s1::ParametricSpline, s2::ParametricSpline)
+    s1.t == s2.t && s1.c == s2.c && s1.k == s2.k && s1.bc == s2.bc && s1.fp == s2.fp
+end
+
+
 function ParametricSpline(x::AbstractMatrix;
                           w::AbstractVector=ones(size(x, 2)),
                           k::Int=3, s::Real=0.0, bc::AbstractString="nearest",
@@ -687,6 +695,9 @@ get_knots(spl::Spline2D) = (spl.tx[spl.kx+1:end-spl.kx],
                             spl.ty[spl.ky+1:end-spl.ky])
 get_residual(spl::Spline2D) = spl.fp
 
+function ==(s1::Spline2D, s2::Spline2D)
+    s1.tx == s2.tx && s1.ty == s2.ty && s1.c == s2.c && s1.kx == s2.kx && s1.ky == s2.ky && s1.fp == s2.fp
+end
 
 # Helper functions for calculating required size of work arrays in surfit.
 # Note that x and y here are as in the Fortran documentation.
