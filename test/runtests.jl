@@ -209,8 +209,6 @@ sp4 = ParametricSpline(x, y.+1)
 @test allunique([sp1,sp3,sp4])
 
 
-println("All tests passed.")
-
 
 # -----------------------------------------------------------------------------
 # Spline2D
@@ -322,3 +320,6 @@ sp4 = Spline2D(x, y.+1, z)
 sp5 = Spline2D(x, y, z.+1)
 @test sp1 == sp2
 @test allunique([sp1, sp3, sp4, sp5])
+
+
+println("All tests passed.")
