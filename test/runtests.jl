@@ -326,10 +326,4 @@ sp5 = Spline2D(x, y, z.+1)
 @test sp1 == sp2
 @test allunique([sp1, sp3, sp4, sp5])
 
-# test bad least squares / rank deficient warning
-x = 1.0 .+ (0:100)*2e-16
-y = 1.0 .+ (100:-1:0)*2e-16;
-z = (-1).^(0:100) 
-@test_logs (:warn,Regex("rank deficient")) Spline2D(x,y,z,s=85)
-
 println("All tests passed.")
