@@ -385,7 +385,7 @@ function roots(spline::Spline1D; maxn::Integer=8)
     if ier[1] == 0
         return zeros[1:m[1]]
     elseif ier[1] == 1
-        warn("number of zeros exceeded maxn; only first maxn zeros returned")
+        @warn("number of zeros exceeded maxn; only first maxn zeros returned")
         return zeros
     elseif ier[1] == 10
         error("Invalid input data.")
@@ -825,7 +825,7 @@ function Spline2D(x::AbstractVector, y::AbstractVector, z::AbstractVector;
     if (ier[] == 0 || ier[] == -1 || ier[] == -2)
         # good values, pass.
     elseif ier[] < -2
-        warn("""
+        @warn("""
         The coefficients of the spline returned have been
         computed as the minimal norm least-squares solution of a
         (numerically) rank deficient system. The rank is $(-ier[]).
