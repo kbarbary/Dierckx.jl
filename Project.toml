@@ -1,7 +1,7 @@
 name = "Dierckx"
 uuid = "39dd38d3-220a-591b-8e3c-4c3a8c710a94"
 repo = "https://github.com/kbarbary/Dierckx.jl.git"
-version = "0.5.0"
+version = "0.5.1"
 
 [deps]
 Dierckx_jll = "cd4c43a9-7502-52ba-aa6d-59fb2a88580b"

@@ -1,3 +1,8 @@
+v0.5.1 (2020-11-23)
+===================
+
+- Migrate CI to GitHub Actions (Travis CI is no longer free from Dec. 2020)
+
 v0.5.0 (2020-07-21)
 ===================
 
