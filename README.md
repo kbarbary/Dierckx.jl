@@ -3,8 +3,7 @@ Dierckx.jl
 
 *Julia library for 1-d and 2-d splines*
 
-[![Build Status](https://img.shields.io/travis/kbarbary/Dierckx.jl.svg?style=flat-square&label=linux)](https://travis-ci.org/kbarbary/Dierckx.jl)
-[![Build status](https://img.shields.io/appveyor/ci/kbarbary/dierckx-jl.svg?style=flat-square&label=windows)](https://ci.appveyor.com/project/kbarbary/dierckx-jl/branch/master)
+[![Build Status](https://img.shields.io/travis/kbarbary/Dierckx.jl.svg?style=flat-square&label=CI)](https://github.com/kbarbary/Dierckx.jl/actions?query=workflow%3ACI)
 [![Coverage Status](http://img.shields.io/coveralls/kbarbary/Dierckx.jl.svg?style=flat-square)](https://coveralls.io/r/kbarbary/Dierckx.jl?branch=master)
 
 This is a Julia wrapper for the
