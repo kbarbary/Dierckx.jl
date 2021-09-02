@@ -301,3 +301,13 @@ Dierckx.jl is distributed under a 3-clause BSD license. See LICENSE.md
 for details. The real*8 version of the Dierckx Fortran library as well as
 some test cases and error messages are copied from the scipy package,
 which is distributed under this license.
+
+
+Citation
+--------
+
+If you use this package in a pulication and wish to cite it, you may want to cite the original [Fortran dierckx library](http://www.netlib.org/dierckx/):
+
+> Paul Dierckx, Curve and Surface Fitting with Splines, Oxford University Press, 1993
+
+If convenient, you can also include a link to the github repository for this package: https://github.com/kbarbary/Dierckx.jl.
