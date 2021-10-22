@@ -466,7 +466,7 @@ function _ParametricSpline(u::Union{AbstractVector, Nothing}, x::AbstractMatrix,
 
     length(w) == m || error("number of data points and length of w must match")
     0 < idim < 11 || error("number of dimension must be between 1 and 10")
-    m > k || error("number of data points muct be greater than k")
+    m > k || error("number of data points must be greater than k")
     1 <= k <= 5 || error("1 <= k = $k <= 5 must hold")
 
     local ipar, uin, ub, ue
