@@ -35,18 +35,7 @@ Install (Julia 1.3 and later)
 (v1.3) pkg> add Dierckx
 ```
 
-(Type `]` to enter package mode.) No Fortran compiler is required on
-any platform.
-
-
-The Fortran library source code is distributed with the package, so
-you need a Fortran compiler on OSX or Linux. On Ubuntu,
-`sudo apt-get install gfortran` will do it.
-
-On Darwin, `gfortran` comes bundled with `gcc`, so after installing Homebrew,
-`brew install gcc` should install `gfortran`.
-
-On Windows, a compiled dll will be downloaded.
+(Type `]` to enter package mode.)
 
 Example Usage
 -------------
