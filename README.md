@@ -16,7 +16,7 @@ use case not covered here.
 
 All new development on `Dierckx.jl` will be for Julia v1.3 and above.
 The `master` branch is therefore incompatible with earlier versions
-of Julia. 
+of Julia.
 
 ### Features
 
@@ -244,6 +244,16 @@ evalgrid(spl, x, y)
   `(x[i], y[j])`. In other words, when interpreting the result as a
   matrix, `x` gives the row coordinates and `y` gives the column
   coordinates.
+
+```julia
+derivative(spl, x, y; nux = 1, nuy = 1)
+```
+
+- Evaluate the partial derivative of the 2-d spline `spl` at the
+  grid points spanned by the coordinate arrays `x` and `y`.
+  Note that `x` refers to the row coordinates, and `y` to the column
+  ones. The order of the derivatives may be between `0` and `kx-1` for `x`
+  and `0` and `ky-1` for `y`.
 
 - integral of a 2-d spline over the domain `[x0, x1]*[y0, y1]`
 
