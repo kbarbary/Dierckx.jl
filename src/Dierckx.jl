@@ -955,7 +955,7 @@ end
 function evaluate!(wrk::Vector{Float64}, Vspline::Spline2D, x::Real, y::Real)
     ier = Ref{Int32}()
     lwrk = spline.kx + spline.ky + 2
-    @assert length(wrk) == lwrk
+    length(wrk) == lwrk || throw(ArgumentError("Length of work array not equal to required length of `spline.kx + spline.ky + 2 = $(spline.kx + spline.ky + 2)`"))
     z = Ref{Float64}()
     ccall((:bispeu_, libddierckx), Nothing,
           (Ref{Float64}, Ref{Int32},  # ty, ny
