@@ -1010,6 +1010,78 @@ function evalgrid(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     return z
 end
 
+function _derivative(tx::Vector{Float64}, ty::Vector{Float64}, c::Vector{Float64},
+    kx::Int, ky::Int, nux::Int, nuy::Int, x::Vector{Float64}, y::Vector{Float64},
+    wrk::Vector{Float64}, iwrk::Vector{Float64})
+    (0 <= nux < kx) || error("order of derivative must be positive and less than the spline order")
+    (0 <= nuy < ky) || error("order of derivative must be positive and less than the spline order")
+    mx = length(x)
+    my = length(y)
+    nx = length(tx)
+    ny = length(ty)
+    lwrk = length(wrk)
+    lwrkmin = mx * (kx + 1 - nux) + my * (ky + 1 - nuy) + (nx - kx - 1) * (ny - ky - 1)
+    lwrk >= lwrkmin || error("Length of wrk must be at least $lwrkmin")
+    kwrk = length(iwrk)
+    kwrk >= mx + my || error("length of iwrk must be greater than or equal to length(x) + length(y) = $(mx + my)")
+    z = Vector{Float64}(undef, mx * my)
+    ier = Ref{Int32}(0)
+    # the order of x and y are switched compared to the fortran implementation
+    # here x refers to rows and y to columns
+    ccall((:parder_, libddierckx), Nothing,
+        (Ref{Float64}, Ref{Int32}, # ty, ny
+            Ref{Float64}, Ref{Int32}, # tx, nx
+            Ref{Float64}, Ref{Int32}, Ref{Int32}, # c, ky, kx
+            Ref{Int32}, Ref{Int32}, # nuy, nux
+            Ref{Float64}, Ref{Int32}, Ref{Float64}, Ref{Int32}, Ref{Float64}, # y, my, x, mx, z
+            Ref{Float64}, Ref{Int32}, Ref{Float64}, Ref{Int32}, # wrk, lwrk, iwrk, kwrk
+            Ref{Int32}), # ier
+        ty, ny, tx, nx, c, ky, kx, nuy, nux, y, my, x, mx, z, wrk, lwrk, iwrk, kwrk, ier)
+    ier[] == 0 || error(_eval2d_message)
+    return reshape(z, mx, my)
+end
+
+function derivative(spline::Spline2D, x::AbstractVector, y::AbstractVector, nux::Int = 1, nuy::Int = 1)
+    mx = length(x)
+    my = length(y)
+    nx = length(spline.tx)
+    ny = length(spline.ty)
+
+    kx = spline.kx
+    ky = spline.ky
+
+    lwrkmin = mx * (kx + 1 - nux) + my * (ky + 1 - nuy) + (nx - kx - 1) * (ny - ky - 1)
+    lwrk = lwrkmin
+    wrk = Vector{Float64}(undef, lwrk)
+    kwrk = mx + my
+    iwrk = Vector{Float64}(undef, kwrk)
+
+    _derivative(spline.tx, spline.ty, spline.c,
+        spline.kx, spline.ky, nux, nuy,
+        convert(Vector{Float64}, x),
+        convert(Vector{Float64}, y),
+        wrk, iwrk)
+end
+
+function derivative(spline::Spline2D, x::Real, y::AbstractVector, nux::Int = 1, nuy::Int = 1)
+    z = derivative(spline, [Float64(x)], y, nux, nuy)
+    vec(z)
+end
+
+function derivative(spline::Spline2D, x::AbstractVector, y::Real, nux::Int = 1, nuy::Int = 1)
+    z = derivative(spline, x, [Float64(y)], nux, nuy)
+    vec(z)
+end
+function derivative(spline::Spline2D, x::Real, y::Real, nux::Int = 1, nuy::Int = 1)
+    z = derivative(spline, [Float64(x)], [Float64(y)], nux, nuy)
+    z[]
+end
+
+# TODO: deprecate this?
+function derivative(spline::Spline2D, x, y; nux::Int = 1, nuy::Int = 1)
+    derivative(spline, x, y, nux, nuy)
+end
+
 # 2D integration
 function integrate(spline::Spline2D, xb::Real, xe::Real, yb::Real, ye::Real)
         nx = length(spline.tx)

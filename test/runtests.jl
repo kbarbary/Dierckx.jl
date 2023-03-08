@@ -313,6 +313,39 @@ for (f, domain, exact) in [(test2d_1, (0.0, 1.0, 0.0, 1.0), 1.0/3.0),
     @test isapprox(integrate(spl1, x0, x1, y0, y1), exact, atol=1e-6)
 end
 
+# test derivative
+@testset "2D spline derivative" begin
+     x = Vector{Float64}(1:4)
+     y = Vector{Float64}(1:5)
+     z = (x .^ 2) * (y .^ 3)'
+     s = Spline2D(x, y, z)
+     @testset "ddx" begin
+          for xi in x, yi in y
+               @test derivative(s, xi, yi, nux = 1, nuy = 0) ≈ 2xi * yi^3
+          end
+     end
+     @testset "d2dx2" begin
+          for xi in x, yi in y
+               @test derivative(s, xi, yi, nux = 2, nuy = 0) ≈ 2yi^3
+          end
+     end
+     @testset "ddy" begin
+          for xi in x, yi in y
+               @test derivative(s, xi, yi, nux = 0, nuy = 1) ≈ 3xi^2 * yi^2
+          end
+     end
+     @testset "d2dy2" begin
+          for xi in x, yi in y
+               @test derivative(s, xi, yi, nux = 0, nuy = 2) ≈ 6xi^2 * yi
+          end
+     end
+     @testset "ddx_ddy" begin
+          for xi in x, yi in y
+               @test derivative(s, xi, yi, nux = 1, nuy = 1) ≈ 6xi * yi^2
+          end
+     end
+end
+
 # test equality
 seed!(0)
 x = sort(rand(10))
