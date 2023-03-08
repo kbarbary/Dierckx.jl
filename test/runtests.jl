@@ -7,382 +7,356 @@ using Random: seed!
 # generated with genanswers.py script.
 
 # -----------------------------------------------------------------------------
-@testset "Spline1D" begin
-     x = [1.0, 2.0, 3.0]
-     y = [0.0, 2.0, 4.0]
-     spl = Spline1D(x, y; k = 1, s = length(x))
+# Spline1D
 
-     yi = evaluate(spl, [1.0, 1.5, 2.0])
-     @test yi ≈ [0.0, 1.0, 2.0]
-     @test evaluate(spl, 1.5) ≈ 1.0
-     @test get_knots(spl) ≈ [1.0, 3.0]
-     @test get_coeffs(spl) ≈ [0.0, 4.0]
-     @test isapprox(get_residual(spl), 0.0, atol = 1.e-30)
+x = [1., 2., 3.]
+y = [0., 2., 4.]
+spl = Spline1D(x, y; k=1, s=length(x))
 
-     @test spl([1.0, 1.5, 2.0]) ≈ [0.0, 1.0, 2.0]
-     @test spl(1.5) ≈ 1.0
+yi = evaluate(spl, [1.0, 1.5, 2.0])
+@test yi ≈ [0.0, 1.0, 2.0]
+@test evaluate(spl, 1.5) ≈ 1.0
+@test get_knots(spl) ≈ [1., 3.]
+@test get_coeffs(spl) ≈ [0., 4.]
+@test isapprox(get_residual(spl), 0.0, atol=1.e-30)
 
-     @testset "a copy is returned by get_knots()" begin
-          knots = get_knots(spl)
-          knots[1] = 1000.0
-          @test get_knots(spl) ≈ [1.0, 3.0]
-     end
+@test spl([1.0, 1.5, 2.0]) ≈ [0.0, 1.0, 2.0]
+@test spl(1.5) ≈ 1.0
 
-     # test ported from scipy.interpolate testing this bug:
-     # http://mail.scipy.org/pipermail/scipy-dev/2008-March/008507.html
-     x = [-1.0, -0.65016502, -0.58856235, -0.26903553, -0.17370892,
-          -0.10011001, 0.0, 0.10011001, 0.17370892, 0.26903553, 0.58856235,
-          0.65016502, 1.0]
-     y = [1.0, 0.62928599, 0.5797223, 0.39965815, 0.36322694, 0.3508061,
-          0.35214793, 0.3508061, 0.36322694, 0.39965815, 0.5797223,
-          0.62928599, 1.0]
-     w = [1.00000000e+12, 6.88875973e+02, 4.89314737e+02, 4.26864807e+02,
-          6.07746770e+02, 4.51341444e+02, 3.17480210e+02, 4.51341444e+02,
-          6.07746770e+02, 4.26864807e+02, 4.89314737e+02, 6.88875973e+02,
-          1.00000000e+12]
-     spl = Spline1D(x, y; w = w, s = Float64(length(x)))
-     desired = [0.35100374, 0.51715855, 0.87789547, 0.98719344]
-     actual = evaluate(spl, [0.1, 0.5, 0.9, 0.99])
-     @test isapprox(actual, desired, atol = 5e-4)
+# test that a copy is returned by get_knots()
+knots = get_knots(spl)
+knots[1] = 1000.
+@test get_knots(spl) ≈ [1., 3.]
 
-     @testset "periodic" begin
-          x = [1.0, 2.0, 3.0, 4.0, 5.0]
-          y = [4.0, 1.0, 4.0, 1.0, 4.0]
-          spl = Spline1D(x, y, periodic = true)
+# test ported from scipy.interpolate testing this bug:
+# http://mail.scipy.org/pipermail/scipy-dev/2008-March/008507.html
+x = [-1., -0.65016502, -0.58856235, -0.26903553, -0.17370892,
+     -0.10011001, 0., 0.10011001, 0.17370892, 0.26903553, 0.58856235,
+     0.65016502, 1.]
+y = [1.,0.62928599, 0.5797223, 0.39965815, 0.36322694, 0.3508061,
+     0.35214793, 0.3508061, 0.36322694, 0.39965815, 0.5797223,
+     0.62928599, 1.]
+w = [1.00000000e+12, 6.88875973e+02, 4.89314737e+02, 4.26864807e+02,
+     6.07746770e+02, 4.51341444e+02, 3.17480210e+02, 4.51341444e+02,
+     6.07746770e+02, 4.26864807e+02, 4.89314737e+02, 6.88875973e+02,
+     1.00000000e+12]
+spl = Spline1D(x, y; w=w, s=Float64(length(x)))
+desired = [0.35100374, 0.51715855, 0.87789547, 0.98719344]
+actual = evaluate(spl, [0.1, 0.5, 0.9, 0.99])
+@test isapprox(actual, desired, atol=5e-4)
 
-          @test derivative(spl, 1) ≈ derivative(spl, 5)
-          @test derivative(spl, 1, nu = 2) ≈ derivative(spl, 5, nu = 2)
-     end
+# test periodic
+x = [1., 2., 3., 4., 5.]
+y = [4., 1., 4., 1., 4.]
+spl = Spline1D(x, y, periodic=true)
 
-     @testset "out-of-range" begin
-          x = [0.0:4.0;]
-          y = x .^ 3
+@test derivative(spl, 1) ≈ derivative(spl, 5)
+@test derivative(spl, 1, nu=2) ≈ derivative(spl, 5, nu=2)
 
-          xp = range(-8.0, stop = 13.0, length = 100)
-          xp_zeros = Float64[(0.0 <= xi <= 4.0) ? xi : 0.0 for xi in xp]
-          xp_clip = Float64[(0.0 <= xi <= 4.0) ? xi : (xi < 0.0) ? 0.0 : 4.0 for xi in xp]
+# tests for out-of-range
+x = [0.0:4.0;]
+y = x.^3
 
-          spl = Spline1D(x, y)
-          t = get_knots(spl)[2:end-1]  # knots, excluding those at endpoints
-          spl2 = Spline1D(x, y, t)
+xp = range(-8.0, stop=13.0, length=100)
+xp_zeros = Float64[(0. <= xi <= 4.) ? xi : 0.0 for xi in xp]
+xp_clip = Float64[(0. <= xi <= 4.) ? xi : (xi < 0.0) ? 0.0 : 4. for xi in xp]
 
-          @test evaluate(spl, xp) ≈ xp_clip .^ 3
-          @test evaluate(spl2, xp) ≈ xp_clip .^ 3
+spl = Spline1D(x, y)
+t = get_knots(spl)[2: end-1]  # knots, excluding those at endpoints
+spl2 = Spline1D(x, y, t)
 
-          @testset "other bc's" begin
-               spl = Spline1D(x, y; bc = "extrapolate")
-               @test evaluate(spl, xp) ≈ xp .^ 3
-               spl = Spline1D(x, y; bc = "zero")
-               @test evaluate(spl, xp) ≈ xp_zeros .^ 3
-               spl = Spline1D(x, y; bc = "error")
-               @test_throws ErrorException evaluate(spl, xp)
+@test evaluate(spl, xp) ≈ xp_clip.^3
+@test evaluate(spl2, xp) ≈ xp_clip.^3
 
-          end
+# test other bc's
+spl = Spline1D(x, y; bc="extrapolate")
+@test evaluate(spl, xp) ≈ xp.^3
+spl = Spline1D(x, y; bc="zero")
+@test evaluate(spl, xp) ≈ xp_zeros.^3
+spl = Spline1D(x, y; bc="error")
+@test_throws ErrorException evaluate(spl, xp)
 
-          @testset "unknown bc" begin
-               @test_throws ErrorException Spline1D(x, y; bc = "unknown")
-          end
-     end
+# test unknown bc
+@test_throws ErrorException Spline1D(x, y; bc="unknown")
 
-     @testset "derivative" begin
-          x = range(0, stop = 1, length = 70)
-          y = x .^ 3
-          spl = Spline1D(x, y)
-          xt = [0.3, 0.4, 0.5]
-          @test derivative(spl, xt) ≈ 3xt .^ 2
-     end
+# test derivative
+x = range(0, stop=1, length = 70)
+y = x.^3
+spl = Spline1D(x, y)
+xt = [0.3, 0.4, 0.5]
+@test derivative(spl, xt) ≈ 3xt.^2
 
-     @testset "integral" begin
-          x = range(0, stop = 10, length = 70)
-          y = x .^ 2
-          spl = Spline1D(x, y)
-          @test integrate(spl, 1.0, 5.0) ≈ 5.0^3 / 3 - 1 / 3
-     end
+# test integral
+x = range(0, stop=10, length = 70)
+y = x.^2
+spl = Spline1D(x, y)
+@test integrate(spl, 1.0, 5.0) ≈ 5.0^3/3 - 1/3
 
-     @testset "roots" begin
-          x = range(0, stop = 10, length = 70)
-          y = (x .- 4) .^ 2 .- 1
-          spl = Spline1D(x, y)
-          @test roots(spl) ≈ [3, 5]
-     end
+# test roots
+x = range(0, stop=10, length = 70)
+y = (x .- 4).^2 .- 1
+spl = Spline1D(x, y)
+@test roots(spl) ≈ [3, 5]
 
-     @testset "show" begin
-          io = IOBuffer()
-          show(io, spl)
-          seek(io, 0)
-          s = read(io, String)
-          @test s[1:9] == "Spline1D("
-     end
+# test that show works.
+io = IOBuffer()
+show(io, spl)
+seek(io, 0)
+s = read(io, String)
+@test s[1:9] == "Spline1D("
 
-     @testset "equality" begin
-          seed!(0)
-          x = sort(rand(10))
-          y = rand(10)
-          sp1 = Spline1D(x, y)
-          sp2 = Spline1D(x, y)
-          sp3 = Spline1D(x .+ 1, y)
-          sp4 = Spline1D(x, y .+ 1)
-          @test sp1 == sp2
-          @test allunique([sp1, sp3, sp4])
-     end
-end
+# test equality
+seed!(0)
+x = sort(rand(10))
+y = rand(10)
+sp1 = Spline1D(x, y)
+sp2 = Spline1D(x, y)
+sp3 = Spline1D(x.+1, y)
+sp4 = Spline1D(x, y.+1)
+@test sp1 == sp2
+@test allunique([sp1,sp3,sp4])
+
 
 # -----------------------------------------------------------------------------
-@testset "ParametricSpline" begin
-     u = [1.0, 2.0, 3.0]
-     x = [1.0 2.0 3.0; 0.0 2.0 4.0]
-     spl = ParametricSpline(u, x, k = 1, s = size(x, 2))
+# ParametricSpline
 
-     xi = evaluate(spl, [1.0, 1.5, 2.0])
-     @test xi ≈ [1.0 1.5 2.0; 0.0 1.0 2.0]
-     @test evaluate(spl, 1.5) ≈ [1.5, 1.0]
-     @test get_knots(spl) ≈ [1.0, 3.0]
-     @test get_coeffs(spl) ≈ [1.0 3.0; 0.0 4.0]
-     @test isapprox(get_residual(spl), 0.0, atol = 1.e-30)
+u = [1., 2., 3.]
+x = [1. 2. 3.; 0. 2. 4.]
+spl = ParametricSpline(u, x, k=1, s=size(x, 2))
 
-     @test spl([1.0, 1.5, 2.0]) ≈ [1.0 1.5 2.0; 0.0 1.0 2.0]
-     @test spl(1.5) ≈ [1.5, 1.0]
+xi = evaluate(spl, [1.0, 1.5, 2.0])
+@test xi ≈ [1.0 1.5 2.0; 0.0 1.0 2.0]
+@test evaluate(spl, 1.5) ≈ [1.5, 1.0]
+@test get_knots(spl) ≈ [1., 3.]
+@test get_coeffs(spl) ≈ [1.0 3.0; 0.0 4.0]
+@test isapprox(get_residual(spl), 0.0, atol=1.e-30)
 
-     @testset "a copy is returned by get_knots()" begin
-          knots = get_knots(spl)
-          knots[1] = 1000.0
-          @test get_knots(spl) ≈ [1.0, 3.0]
-     end
+@test spl([1.0, 1.5, 2.0]) ≈ [1.0 1.5 2.0; 0.0 1.0 2.0]
+@test spl(1.5) ≈ [1.5, 1.0]
 
-     @testset "periodic" begin
-          x = [23.0 24.0 25.0 25.0 24.0 23.0
-               13.0 12.0 12.0 13.0 13.0 13.0]
-          spl = ParametricSpline(x, periodic = true)
-          @test evaluate(spl, 0) ≈ evaluate(spl, 1)
-          @test derivative(spl, 0) ≈ derivative(spl, 1)
-          @test derivative(spl, 0, nu = 2) ≈ derivative(spl, 1, nu = 2)
-     end
+# test that a copy is returned by get_knots()
+knots = get_knots(spl)
+knots[1] = 1000.
+@test get_knots(spl) ≈ [1., 3.]
 
-     @testset "out-of-range" begin
-          u = 0.0:4.0
-          x = [u' .^ 2; u' .^ 3]
+# test periodic
+x = [23. 24. 25. 25. 24. 23.;
+     13. 12. 12. 13. 13. 13.]
+spl = ParametricSpline(x, periodic=true)
+@test evaluate(spl, 0) ≈ evaluate(spl, 1)
+@test derivative(spl, 0) ≈ derivative(spl, 1)
+@test derivative(spl, 0, nu=2) ≈ derivative(spl, 1, nu=2)
 
-          up = range(-8.0, stop = 13.0, length = 100)
-          up_zeros = Float64[(0.0 <= ui <= 4.0) ? ui : 0.0 for ui in up]
-          up_clip = Float64[(0.0 <= ui <= 4.0) ? ui : (ui < 0.0) ? 0.0 : 4.0 for ui in up]
+# tests for out-of-range
+u = 0.0:4.0
+x = [u'.^2; u'.^3]
 
-          spl = ParametricSpline(u, x)
-          t = get_knots(spl)[2:end-1]  # knots, excluding those at endpoints
-          spl2 = ParametricSpline(u, x, t)
+up = range(-8.0, stop=13.0, length = 100)
+up_zeros = Float64[(0. <= ui <= 4.) ? ui : 0.0 for ui in up]
+up_clip = Float64[(0. <= ui <= 4.) ? ui : (ui < 0.0) ? 0.0 : 4. for ui in up]
 
-          @test evaluate(spl, up) ≈ [up_clip' .^ 2; up_clip' .^ 3]
-          @test evaluate(spl2, up) ≈ [up_clip' .^ 2; up_clip' .^ 3]
+spl = ParametricSpline(u, x)
+t = get_knots(spl)[2: end-1]  # knots, excluding those at endpoints
+spl2 = ParametricSpline(u, x, t)
 
-          @testset "other bc's" begin
-               spl = ParametricSpline(u, x; bc = "extrapolate")
-               @test evaluate(spl, up) ≈ [up' .^ 2; up' .^ 3]
-               spl = ParametricSpline(u, x; bc = "zero")
-               @test evaluate(spl, up) ≈ [up_zeros' .^ 2; up_zeros' .^ 3]
-               spl = ParametricSpline(u, x; bc = "error")
-               @test_throws ErrorException evaluate(spl, up)
+@test evaluate(spl, up) ≈ [up_clip'.^2; up_clip'.^3]
+@test evaluate(spl2, up) ≈ [up_clip'.^2; up_clip'.^3]
 
-          end
+# test other bc's
+spl = ParametricSpline(u, x; bc="extrapolate")
+@test evaluate(spl, up) ≈ [up'.^2; up'.^3]
+spl = ParametricSpline(u, x; bc="zero")
+@test evaluate(spl, up) ≈ [up_zeros'.^2; up_zeros'.^3]
+spl = ParametricSpline(u, x; bc="error")
+@test_throws ErrorException evaluate(spl, up)
 
-          @testset "unknown bc" begin
-               @test_throws ErrorException ParametricSpline(u, x; bc = "unknown")
-          end
-     end
+# test unknown bc
+@test_throws ErrorException ParametricSpline(u, x; bc="unknown")
 
-     @testset "derivative" begin
-          u = range(0, stop = 1, length = 70)
-          x = [u' .^ 2; u' .^ 3]
-          spl = ParametricSpline(u, x)
-          ut = [0.3, 0.4, 0.5]
-          @test derivative(spl, 0.3) ≈ [2 * 0.3, 3 * 0.3^2]
-          @test derivative(spl, ut) ≈ [2 * ut'; 3 * ut' .^ 2]
-          @test derivative(spl, 0.3, nu = 2) ≈ [2.0, 6 * 0.3]
-          @test derivative(spl, ut, nu = 2) ≈ [2 * ones(3)'; 6 * ut']
-     end
+# test derivative
+u = range(0, stop=1, length = 70)
+x = [u'.^2; u'.^3]
+spl = ParametricSpline(u, x)
+ut = [0.3, 0.4, 0.5]
+@test derivative(spl, 0.3) ≈ [2*0.3, 3*0.3^2]
+@test derivative(spl, ut) ≈ [2*ut'; 3*ut'.^2]
+@test derivative(spl, 0.3, nu=2) ≈ [2.0, 6*0.3]
+@test derivative(spl, ut, nu=2) ≈ [2*ones(3)'; 6*ut']
 
-     @testset "integral" begin
-          u = range(0, stop = 10, length = 70)
-          x = [u' .^ 2; u' .^ 3]
-          spl = ParametricSpline(u, x)
-          @test integrate(spl, 1.0, 5.0) ≈ [5.0^3 / 3 - 1 / 3, 5.0^4 / 4 - 1 / 4]
-     end
+# test integral
+u = range(0, stop=10, length = 70)
+x = [u'.^2; u'.^3]
+spl = ParametricSpline(u, x)
+@test integrate(spl, 1.0, 5.0) ≈ [5.0^3/3 - 1/3, 5.0^4/4 - 1/4]
 
-     @testset "show" begin
-          io = IOBuffer()
-          show(io, spl)
-          seek(io, 0)
-          s = read(io, String)
-          @test s[1:17] == "ParametricSpline("
-     end
+# test that show works.
+io = IOBuffer()
+show(io, spl)
+seek(io, 0)
+s = read(io, String)
+@test s[1:17] == "ParametricSpline("
 
-     @testset "equality" begin
-          seed!(0)
-          x = sort(rand(10))
-          y = rand(3, 10)
-          sp1 = ParametricSpline(x, y)
-          sp2 = ParametricSpline(x, y)
-          sp3 = ParametricSpline(x .+ 1, y)
-          sp4 = ParametricSpline(x, y .+ 1)
-          @test sp1 == sp2
-          @test allunique([sp1, sp3, sp4])
-     end
 
-     @testset "too many roots warning" begin
-          x = (0:100)
-          y = (-1) .^ (0:100)
-          sp = Spline1D(x, y)
-          @test_logs (:warn, Regex("number of zeros exceeded")) roots(sp)
-     end
-end
+# test equality
+seed!(0)
+x = sort(rand(10))
+y = rand(3, 10)
+sp1 = ParametricSpline(x, y)
+sp2 = ParametricSpline(x, y)
+sp3 = ParametricSpline(x.+1, y)
+sp4 = ParametricSpline(x, y.+1)
+@test sp1 == sp2
+@test allunique([sp1,sp3,sp4])
+
+# test too many roots warning
+x = (0:100)
+y = (-1).^(0:100)
+sp = Spline1D(x,y)
+@test_logs (:warn,Regex("number of zeros exceeded")) roots(sp)
+
 
 # -----------------------------------------------------------------------------
-@testset "Spline2D" begin
-     @testset "linear" begin
-          x = [1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0]
-          y = [1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 1.0, 2.0, 3.0]
-          z = [0.0, 0.0, 0.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0]
-          spl = Spline2D(x, y, z; kx = 1, ky = 1, s = length(x))
-          tx, ty = get_knots(spl)
-          @test tx ≈ [1.0, 3.0]
-          @test ty ≈ [1.0, 3.0]
-          @test isapprox(get_residual(spl), 0.0, atol = 1e-16)
-          @test evaluate(spl, 2.0, 1.5) ≈ 2.0
-          @test evalgrid(spl, [1.0, 1.5, 2.0], [1.0, 1.5]) ≈ [0.0 0.0; 1.0 1.0; 2.0 2.0]
+# Spline2D
 
-          @testset "1-d grid arrays" begin
-               @test evalgrid(spl, [2.0], [1.5])[1, 1] ≈ 2.0
+# test linear
+x = [1., 1., 1., 2., 2., 2., 3., 3., 3.]
+y = [1., 2., 3., 1., 2., 3., 1., 2., 3.]
+z = [0., 0., 0., 2., 2., 2., 4., 4., 4.]
+spl = Spline2D(x, y, z; kx=1, ky=1, s=length(x))
+tx, ty = get_knots(spl)
+@test tx ≈ [1., 3.]
+@test ty ≈ [1., 3.]
+@test isapprox(get_residual(spl), 0.0, atol=1e-16)
+@test evaluate(spl, 2.0, 1.5) ≈ 2.0
+@test evalgrid(spl, [1.,1.5,2.], [1.,1.5]) ≈ [0. 0.; 1. 1.; 2. 2.]
+
+# test 1-d grid arrays
+@test evalgrid(spl, [2.0], [1.5])[1, 1] ≈ 2.0
+
+# In this setting, lwrk2 is too small in the default run.
+x = range(-2, stop=2, length = 80)
+y = range(-2, stop=2, length = 80)
+z = x .+ y
+spl = Spline2D(x, y, z; s=length(x))
+@test evaluate(spl, 1.0, 1.0) ≈ 2.0
+
+# In this setting lwrk2 is too small multiple times!
+# Eventually an error about s being too small is thrown.
+seed!(0)
+x = rand(100)
+y = rand(100)
+z = sin.(x) .* sin.(y)
+@test_throws ErrorException Spline2D(x, y, z; kx=1, ky=1, s=0.0)
+
+# test grid input creation
+x = [0.5, 2., 3., 4., 5.5, 8.]
+y = [0.5, 2., 3., 4.]
+z = [1. 2. 1. 2.;  # shape is (nx, ny)
+     1. 2. 1. 2.;
+     1. 2. 3. 2.;
+     1. 2. 2. 2.;
+     1. 2. 1. 2.;
+     1. 2. 3. 1.]
+spl = Spline2D(x, y, z)
+
+# element-wise output
+xi = [1., 1.5, 2.3, 4.5, 3.3, 3.2, 3.]
+yi = [1., 2.3, 5.3, 0.5, 3.3, 1.2, 3.]
+ans = [2.94429906542,
+       1.25537598131,
+       2.00063588785,
+       1.0,
+       2.93952664,
+       1.06482509358,
+       3.0]
+zi = evaluate(spl, xi, yi)
+@test zi ≈ ans
+
+zi = spl(xi, yi)
+@test zi ≈ ans
+
+# grid output
+xi = [1., 1.5, 2.3, 4.5]
+yi = [1., 2.3, 5.3]
+ans = [2.94429906542  1.16946130841  1.99831775701;
+       2.80393858478  1.25537598131  1.99873831776;
+       1.67143209613  1.94853338542  2.00063588785;
+       1.89392523364  1.8126946729  2.01042056075]
+zi = evalgrid(spl, xi, yi)
+@test zi ≈ ans
+
+
+# Test 2-d integration
+test2d_1(x, y) = 1 - x^2 -y^2
+test2d_2(x, y) = cos(x) + sin(y)
+test2d_3(x, y) = x*exp(x-y)
+for (f, domain, exact) in [(test2d_1, (0.0, 1.0, 0.0, 1.0), 1.0/3.0),
+                           (test2d_2, (0.0, pi, 0.0, pi), 2.0*pi),
+                           (test2d_3, (0.0, 1.0, 0.0, 1.0), (ℯ-1.0)/ℯ)]
+    (x0, x1, y0, y1) = domain
+
+    # define grids for x and y dimensions:
+    npoints = 50
+    xgrid = range(x0, stop=x1, length = npoints)
+    ygrid = range(y0, stop=y1, length = npoints)
+
+    fxygrid = zeros(npoints, npoints)
+    for (j, y) in enumerate(ygrid)
+        local j, y
+        for (i, x) in enumerate(xgrid)
+            local i, x
+            fxygrid[i,j] = f(x, y)
+        end
+    end
+
+    spl1 = Spline2D(xgrid, ygrid, fxygrid)
+    @test isapprox(integrate(spl1, x0, x1, y0, y1), exact, atol=1e-6)
+end
+
+# test derivative
+@testset "2D spline derivative" begin
+     x = Vector{Float64}(1:4)
+     y = Vector{Float64}(1:5)
+     z = (x .^ 2) * (y .^ 3)'
+     s = Spline2D(x, y, z)
+     @testset "ddx" begin
+          for xi in x, yi in y
+               @test derivative(s, xi, yi, nux = 1, nuy = 0) ≈ 2xi * yi^3
           end
      end
-
-     @testset "too small lwrk2" begin
-          # In this setting, lwrk2 is too small in the default run.
-          x = range(-2, stop = 2, length = 80)
-          y = range(-2, stop = 2, length = 80)
-          z = x .+ y
-          spl = Spline2D(x, y, z; s = length(x))
-          @test evaluate(spl, 1.0, 1.0) ≈ 2.0
-
-          # In this setting lwrk2 is too small multiple times!
-          # Eventually an error about s being too small is thrown.
-          seed!(0)
-          x = rand(100)
-          y = rand(100)
-          z = sin.(x) .* sin.(y)
-          @test_throws ErrorException Spline2D(x, y, z; kx = 1, ky = 1, s = 0.0)
-     end
-
-     @testset "grid input creation" begin
-          x = [0.5, 2.0, 3.0, 4.0, 5.5, 8.0]
-          y = [0.5, 2.0, 3.0, 4.0]
-          z = [1.0 2.0 1.0 2.0  # shape is (nx, ny)
-               1.0 2.0 1.0 2.0
-               1.0 2.0 3.0 2.0
-               1.0 2.0 2.0 2.0
-               1.0 2.0 1.0 2.0
-               1.0 2.0 3.0 1.0]
-          spl = Spline2D(x, y, z)
-          # element-wise output
-          @testset "element wise output" begin
-               xi = [1.0, 1.5, 2.3, 4.5, 3.3, 3.2, 3.0]
-               yi = [1.0, 2.3, 5.3, 0.5, 3.3, 1.2, 3.0]
-               ans = [2.94429906542,
-                    1.25537598131,
-                    2.00063588785,
-                    1.0,
-                    2.93952664,
-                    1.06482509358,
-                    3.0]
-               zi = evaluate(spl, xi, yi)
-               @test zi ≈ ans
-
-               zi = spl(xi, yi)
-               @test zi ≈ ans
-          end
-          @testset "grid output" begin
-               xi = [1.0, 1.5, 2.3, 4.5]
-               yi = [1.0, 2.3, 5.3]
-               ans = [2.94429906542 1.16946130841 1.99831775701
-                    2.80393858478 1.25537598131 1.99873831776
-                    1.67143209613 1.94853338542 2.00063588785
-                    1.89392523364 1.8126946729 2.01042056075]
-               zi = evalgrid(spl, xi, yi)
-               @test zi ≈ ans
+     @testset "d2dx2" begin
+          for xi in x, yi in y
+               @test derivative(s, xi, yi, nux = 2, nuy = 0) ≈ 2yi^3
           end
      end
-
-     # Test 2-d integration
-     @testset "integration" begin
-          test2d_1(x, y) = 1 - x^2 - y^2
-          test2d_2(x, y) = cos(x) + sin(y)
-          test2d_3(x, y) = x * exp(x - y)
-          for (f, domain, exact) in [(test2d_1, (0.0, 1.0, 0.0, 1.0), 1.0 / 3.0),
-               (test2d_2, (0.0, pi, 0.0, pi), 2.0 * pi),
-               (test2d_3, (0.0, 1.0, 0.0, 1.0), (ℯ - 1.0) / ℯ)]
-               (x0, x1, y0, y1) = domain
-
-               # define grids for x and y dimensions:
-               npoints = 50
-               xgrid = range(x0, stop = x1, length = npoints)
-               ygrid = range(y0, stop = y1, length = npoints)
-
-               fxygrid = zeros(npoints, npoints)
-               for (j, y) in enumerate(ygrid)
-                    local j, y
-                    for (i, x) in enumerate(xgrid)
-                         local i, x
-                         fxygrid[i, j] = f(x, y)
-                    end
-               end
-
-               spl1 = Spline2D(xgrid, ygrid, fxygrid)
-               @test isapprox(integrate(spl1, x0, x1, y0, y1), exact, atol = 1e-6)
+     @testset "ddy" begin
+          for xi in x, yi in y
+               @test derivative(s, xi, yi, nux = 0, nuy = 1) ≈ 3xi^2 * yi^2
           end
      end
-
-     # test derivative
-     @testset "derivative" begin
-          x = Vector{Float64}(1:4)
-          y = Vector{Float64}(1:5)
-          z = (x .^ 2) * (y .^ 3)'
-          s = Spline2D(x, y, z)
-          @testset "ddx" begin
-               for xi in x, yi in y
-                    @test derivative(s, xi, yi, nux = 1, nuy = 0) ≈ 2xi * yi^3
-               end
-          end
-          @testset "d2dx2" begin
-               for xi in x, yi in y
-                    @test derivative(s, xi, yi, nux = 2, nuy = 0) ≈ 2yi^3
-               end
-          end
-          @testset "ddy" begin
-               for xi in x, yi in y
-                    @test derivative(s, xi, yi, nux = 0, nuy = 1) ≈ 3xi^2 * yi^2
-               end
-          end
-          @testset "d2dy2" begin
-               for xi in x, yi in y
-                    @test derivative(s, xi, yi, nux = 0, nuy = 2) ≈ 6xi^2 * yi
-               end
-          end
-          @testset "ddx_ddy" begin
-               for xi in x, yi in y
-                    @test derivative(s, xi, yi, nux = 1, nuy = 1) ≈ 6xi * yi^2
-               end
+     @testset "d2dy2" begin
+          for xi in x, yi in y
+               @test derivative(s, xi, yi, nux = 0, nuy = 2) ≈ 6xi^2 * yi
           end
      end
-
-     # test equality
-     @testset "equality" begin
-          seed!(0)
-          x = sort(rand(10))
-          y = sort(rand(10))
-          z = rand(10, 10)
-          sp1 = Spline2D(x, y, z)
-          sp2 = Spline2D(x, y, z)
-          sp3 = Spline2D(x .+ 1, y, z)
-          sp4 = Spline2D(x, y .+ 1, z)
-          sp5 = Spline2D(x, y, z .+ 1)
-          @test sp1 == sp2
-          @test allunique([sp1, sp3, sp4, sp5])
+     @testset "ddx_ddy" begin
+          for xi in x, yi in y
+               @test derivative(s, xi, yi, nux = 1, nuy = 1) ≈ 6xi * yi^2
+          end
      end
 end
+
+# test equality
+seed!(0)
+x = sort(rand(10))
+y = sort(rand(10))
+z = rand(10,10)
+sp1 = Spline2D(x, y, z)
+sp2 = Spline2D(x, y, z)
+sp3 = Spline2D(x.+1, y, z)
+sp4 = Spline2D(x, y.+1, z)
+sp5 = Spline2D(x, y, z.+1)
+@test sp1 == sp2
+@test allunique([sp1, sp3, sp4, sp5])
+
+println("All tests passed.")
