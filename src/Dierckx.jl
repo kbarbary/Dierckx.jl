@@ -952,10 +952,10 @@ function evaluate(spline::Spline2D, x::AbstractVector, y::AbstractVector)
     return z
 end
 
-function evaluate(spline::Spline2D, x::Real, y::Real)
+function evaluate!(wrk::Vector{Float64}, Vspline::Spline2D, x::Real, y::Real)
     ier = Ref{Int32}()
     lwrk = spline.kx + spline.ky + 2
-    wrk = Vector{Float64}(undef, lwrk)
+    length(wrk) == lwrk || throw(ArgumentError("Length of work array not equal to required length of `spline.kx + spline.ky + 2 = $(spline.kx + spline.ky + 2)`"))
     z = Ref{Float64}()
     ccall((:bispeu_, libddierckx), Nothing,
           (Ref{Float64}, Ref{Int32},  # ty, ny
@@ -972,6 +972,12 @@ function evaluate(spline::Spline2D, x::Real, y::Real)
 
     ier[] == 0 || error(_eval2d_message)
     return z[]
+end
+
+function evaluate(spline::Spline2D, x::Real, y::Real)
+    lwrk = spline.kx + spline.ky + 2
+    wrk = Vector{Float64}(undef, lwrk)
+    evaluate!(wrk, spline, x, y)
 end
 
 # Evaluate spline on the grid spanned by the input arrays.
